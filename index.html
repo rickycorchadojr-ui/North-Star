@@ -26,7 +26,7 @@ body{
   padding:18px 22px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 
 .topbar{
@@ -71,6 +71,55 @@ button{
   font-weight:900;
   letter-spacing:1px;
   text-transform:uppercase;
+}
+
+.horizon{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:-2px;
+  margin-bottom:2px;
+}
+
+#horizonLabel{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  opacity:.72;
+}
+
+#horizonGrid{
+  display:grid;
+  grid-template-columns:repeat(37, 1fr);
+  gap:2px;
+  width:100%;
+}
+
+.horizon-square{
+  height:6px;
+  border:1px solid rgba(255,255,255,.45);
+  background:transparent;
+  position:relative;
+  overflow:hidden;
+}
+
+.horizon-square.filled{
+  background:rgba(255,255,255,.28);
+}
+
+.horizon-square.current{
+  border-color:#eee;
+  background:rgba(255,255,255,.12);
+}
+
+.horizon-square .inner{
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  background:#eee;
+  opacity:.8;
 }
 
 .grid-wrap{
@@ -122,7 +171,6 @@ button{
   opacity:1;
 }
 
-/* horizontal arm */
 .tile::before{
   width:10px;
   height:2px;
@@ -130,7 +178,6 @@ button{
   bottom:-2px;
 }
 
-/* vertical arm */
 .tile::after{
   width:2px;
   height:10px;
@@ -152,8 +199,9 @@ button{
   cursor:default;
 }
 
+.empty::before,
 .empty::after{
-  content:"";
+  content:none;
 }
 </style>
 </head>
@@ -176,6 +224,11 @@ button{
     <button onclick="render('days')">Days</button>
     <button onclick="goBack()">Back</button>
     <div class="view-title" id="currentView"></div>
+  </div>
+
+  <div class="horizon">
+    <div id="horizonLabel"></div>
+    <div id="horizonGrid"></div>
   </div>
 
   <div class="grid-wrap" id="gridWrap">
@@ -259,12 +312,60 @@ function meta(){
     `<span style="opacity:.55">VER ${APP_VERSION}</span>`;
 }
 
+function updateHorizon(mode){
+  const now = new Date();
+  const currentYear = yearNum(now.getFullYear());
+  const currentMonth = now.getMonth() + 1;
+  const startOfYear = new Date(now.getFullYear(),0,1);
+  const dayOfYear = Math.floor((sod(now)-sod(startOfYear))/MS_DAY)+1;
+  const weekOfYear = Math.floor((dayOfYear-1)/7)+1;
+
+  let label = `CURRENT YEAR: ${currentYear}`;
+  let innerPercent = null;
+
+  if(mode==="months" || mode==="yearMonths" || mode==="monthWeeks"){
+    label = `CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;
+    innerPercent = currentMonth / 12;
+  }
+
+  if(mode==="weeks" || mode==="weekDays"){
+    label = `CURRENT WEEK: ${weekNumFromStart(now)}`;
+    innerPercent = Math.min(1, weekOfYear / 52);
+  }
+
+  if(mode==="days"){
+    label = `CURRENT DAY: ${dayNum(now)}`;
+    innerPercent = Math.min(1, dayOfYear / 365);
+  }
+
+  horizonLabel.innerText = label;
+  horizonGrid.innerHTML = "";
+
+  for(let y=0;y<=110;y++){
+    const sq = document.createElement("div");
+    sq.className = "horizon-square";
+
+    if(y < currentYear) sq.classList.add("filled");
+    if(y === currentYear) sq.classList.add("current");
+
+    if(y === currentYear && innerPercent !== null){
+      const inner = document.createElement("div");
+      inner.className = "inner";
+      inner.style.width = `${innerPercent*100}%`;
+      sq.appendChild(inner);
+    }
+
+    horizonGrid.appendChild(sq);
+  }
+}
+
 function setState(label,title,cols){
   viewLabel.innerText = label;
   currentView.innerText = title;
   grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   grid.innerHTML = "";
   gridWrap.scrollTop = 0;
+  updateHorizon(currentRender.mode);
 }
 
 function clsForDate(d){
@@ -378,8 +479,7 @@ function renderMonthWeeks(y,m){
 
   while(start<=last){
     const weekStart = new Date(start);
-    const weekEnd = addDays(weekStart,6);
-    const isCurrent = now>=weekStart && now<=weekEnd;
+    const isCurrent = now>=weekStart && now<=addDays(weekStart,6);
 
     tile(
       [formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],
@@ -402,8 +502,7 @@ function renderWeeks(){
 
   while(start<END){
     const weekStart = new Date(start);
-    const weekEnd = addDays(weekStart,6);
-    const isCurrent = now>=weekStart && now<=weekEnd;
+    const isCurrent = now>=weekStart && now<=addDays(weekStart,6);
 
     tile(
       [formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],
@@ -420,7 +519,6 @@ function renderWeeks(){
 
 function renderWeekDays(start){
   const weekStart = sod(start);
-  const weekEnd = addDays(weekStart,6);
 
   setState("Week Grid",formatWeekRange(weekStart),7);
 

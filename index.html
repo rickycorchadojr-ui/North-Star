@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.2 -->
+<!-- NORTH STAR v0.6.3 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -96,7 +96,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.2";
+const APP_VERSION="0.6.3";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -306,13 +306,13 @@ function render(mode,data=null,push=true){
 }
 
 function renderYears(){
-  setState("Lifetime Grid","1987 — 2097",8);
+  setState("Lifetime Grid","1987 — 2097",5);
   const nowY=new Date().getFullYear();
 
   for(let y=1987;y<=2097;y++){
     const img=getYearImage(y);
     const cls=(y===nowY?"current":y<nowY?"past":"future")+(img?" has-image":"");
-    tile([`${y}`,`Y /// ${yearNum(y)}`,y===nowY?"CURRENT YEAR":""],cls,()=>render("yearMonths",{year:y}),y===nowY?"currentTile":null,img);
+    tile([`${y}`,`Y /// ${yearNum(y)}`],cls,()=>render("yearMonths",{year:y}),y===nowY?"currentTile":null,img);
   }
 
   scrollToCurrent();
@@ -333,7 +333,7 @@ function renderYearMonths(y){
 }
 
 function renderMonths(){
-  setState("Continuous Month Grid","M /// 1 — M /// 1320",6);
+  setState("Continuous Month Grid","M /// 1 — M /// 1320",4);
   const now=new Date();
 
   for(let y=1987;y<=2097;y++){
@@ -369,7 +369,7 @@ function renderMonthWeeks(y,m){
 }
 
 function renderWeeks(){
-  setState("Continuous Week Grid",`W /// 1 — W /// ${totalWeeks()}`,6);
+  setState("Continuous Week Grid",`W /// 1 — W /// ${totalWeeks()}`,4);
   const now=sod(new Date());
   let start=new Date(BIRTH);
 

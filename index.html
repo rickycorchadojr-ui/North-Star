@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3.1 -->
+<!-- NORTH STAR v0.3.2 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,30 +7,151 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="North Star">
   <meta name="theme-color" content="#050505">
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;width:100vw;height:100vh;background:#050505;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-.app{height:100vh;padding:18px 22px;display:flex;flex-direction:column;gap:12px}
-.topbar{height:46px;display:flex;justify-content:space-between;font-weight:800}
-.brand{font-size:16px;text-transform:lowercase}
-.label,.meta,.view-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.75}
-.meta{text-align:right;line-height:1.35}
-.nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-button{background:transparent;color:#eee;border:1px solid rgba(255,255,255,.65);padding:7px 13px;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-.grid-wrap{flex:1;overflow:auto;background:#08090a;scroll-behavior:auto}
-.grid{display:grid;min-height:100%;border-top:2px solid rgba(255,255,255,.42);border-left:2px solid rgba(255,255,255,.42)}
-.tile{position:relative;min-height:118px;border-right:2px solid rgba(255,255,255,.42);border-bottom:2px solid rgba(255,255,255,.42);background:#14171b;padding:10px;overflow:visible;cursor:pointer}
-.tile:nth-child(even){background:#111418}
-.tile.current{outline:4px solid #eee;outline-offset:-4px;background:#20242b;z-index:4}
-.tile.future{opacity:.38}.tile.past{opacity:.82}
-.tile::after{content:"+";position:absolute;right:-10px;bottom:-13px;width:18px;height:18px;color:#eee;font-size:23px;line-height:18px;text-align:center;font-weight:300;z-index:5;opacity:.9;pointer-events:none}
-.tile-text{font-size:12px;font-weight:900;line-height:1.25;letter-spacing:.5px;text-transform:uppercase}
-.empty{background:#070707;opacity:.18;cursor:default}.empty::after{content:""}
+
+body{
+  margin:0;
+  width:100vw;
+  height:100vh;
+  background:#050505;
+  color:#eee;
+  font-family:Arial,Helvetica,sans-serif;
+  overflow:hidden;
+}
+
+.app{
+  height:100vh;
+  padding:18px 22px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.topbar{
+  height:46px;
+  display:flex;
+  justify-content:space-between;
+  font-weight:800;
+}
+
+.brand{
+  font-size:16px;
+  text-transform:lowercase;
+}
+
+.label,.meta,.view-title{
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  opacity:.75;
+}
+
+.meta{
+  text-align:right;
+  line-height:1.35;
+}
+
+.nav{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+button{
+  background:transparent;
+  color:#eee;
+  border:1px solid rgba(255,255,255,.65);
+  padding:7px 13px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.grid-wrap{
+  flex:1;
+  overflow:auto;
+  background:#08090a;
+  scroll-behavior:auto;
+}
+
+.grid{
+  display:grid;
+  min-height:100%;
+  border-top:2px solid rgba(255,255,255,.55);
+  border-left:2px solid rgba(255,255,255,.55);
+}
+
+.tile{
+  position:relative;
+  min-height:118px;
+  border-right:2px solid rgba(255,255,255,.55);
+  border-bottom:2px solid rgba(255,255,255,.55);
+  background:#14171b;
+  padding:7px 8px;
+  overflow:visible;
+  cursor:pointer;
+}
+
+.tile:nth-child(even){
+  background:#111418;
+}
+
+.tile.current{
+  outline:4px solid #eee;
+  outline-offset:-4px;
+  background:#20242b;
+  z-index:4;
+}
+
+.tile.future{opacity:.38}
+.tile.past{opacity:.82}
+
+.tile::after{
+  content:"+";
+  position:absolute;
+  right:-9px;
+  bottom:-10px;
+  width:18px;
+  height:18px;
+  color:#eee;
+  font-size:22px;
+  line-height:18px;
+  text-align:center;
+  font-weight:700;
+  z-index:50;
+  opacity:1;
+  pointer-events:none;
+}
+
+.tile-text{
+  font-size:10px;
+  font-weight:900;
+  line-height:1.08;
+  letter-spacing:.45px;
+  text-transform:uppercase;
+}
+
+.empty{
+  background:#070707;
+  opacity:.18;
+  cursor:default;
+}
+
+.empty::after{
+  content:"";
+}
 </style>
 </head>
 
 <body>
 <div class="app">
+
   <div class="topbar">
     <div>
       <div class="brand">north star</div>
@@ -51,10 +172,11 @@ button{background:transparent;color:#eee;border:1px solid rgba(255,255,255,.65);
   <div class="grid-wrap" id="gridWrap">
     <div id="grid" class="grid"></div>
   </div>
+
 </div>
 
 <script>
-const APP_VERSION = "0.3.1";
+const APP_VERSION = "0.3.2";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);
@@ -64,206 +186,286 @@ const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV
 let historyStack = [];
 let currentRender = {mode:"years", data:null};
 
-function sod(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
-function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
-function dayNum(d){return Math.floor((sod(d)-sod(BIRTH))/MS_DAY)+1}
-function ageYears(d=new Date()){return (d-BIRTH)/(MS_DAY*365.2425)}
-function yearNum(y){return y-BIRTH.getFullYear()}
-function monthNum(y,m){return (y-BIRTH.getFullYear())*12+m+1}
-function weekNumFromStart(d){return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))+1}
-function clampDate(d){if(d<BIRTH)return new Date(BIRTH); if(d>=END)return new Date(END); return d}
+function sod(d){
+  return new Date(d.getFullYear(),d.getMonth(),d.getDate());
+}
+
+function addDays(d,n){
+  const x = new Date(d);
+  x.setDate(x.getDate()+n);
+  return x;
+}
+
+function dayNum(d){
+  return Math.floor((sod(d)-sod(BIRTH))/MS_DAY)+1;
+}
+
+function ageYears(d=new Date()){
+  return (d-BIRTH)/(MS_DAY*365.2425);
+}
+
+function yearNum(y){
+  return y-BIRTH.getFullYear();
+}
+
+function monthNum(y,m){
+  return (y-BIRTH.getFullYear())*12+m+1;
+}
+
+function weekNumFromStart(d){
+  return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))+1;
+}
+
+function totalWeeks(){
+  return weekNumFromStart(addDays(END,-1));
+}
+
+function clampDate(d){
+  if(d<BIRTH)return new Date(BIRTH);
+  if(d>=END)return new Date(END);
+  return d;
+}
+
+function formatMonthDay(d){
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function formatWeekRange(start){
+  const end = addDays(start,6);
+  if(start.getMonth() === end.getMonth()){
+    return `${MONTHS[start.getMonth()]} ${start.getDate()}—${end.getDate()}`;
+  }
+  return `${MONTHS[start.getMonth()]} ${start.getDate()}—${MONTHS[end.getMonth()]} ${end.getDate()}`;
+}
 
 function meta(){
-  const now=new Date(), days=dayNum(now), total=Math.floor(365.2425*HORIZON_YEARS);
-  lifeMeta.innerHTML=`DAY ${days.toLocaleString()}<br>AGE ${ageYears(now).toFixed(2)}<br>${((days/total)*100).toFixed(2)}% TO 110<br><span style="opacity:.55">VER ${APP_VERSION}</span>`;
+  const now = new Date();
+  const days = dayNum(now);
+  const total = Math.floor(365.2425*HORIZON_YEARS);
+
+  lifeMeta.innerHTML =
+    `DAY ${days.toLocaleString()}<br>`+
+    `AGE ${ageYears(now).toFixed(2)}<br>`+
+    `${((days/total)*100).toFixed(2)}% TO 110<br>`+
+    `<span style="opacity:.55">VER ${APP_VERSION}</span>`;
 }
 
 function setState(label,title,cols){
-  viewLabel.innerText=label;
-  currentView.innerText=title;
-  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
-  grid.innerHTML="";
-  gridWrap.scrollTop=0;
+  viewLabel.innerText = label;
+  currentView.innerText = title;
+  grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  grid.innerHTML = "";
+  gridWrap.scrollTop = 0;
 }
 
 function clsForDate(d){
-  const now=sod(new Date());
-  if(+sod(d)===+now)return"current";
-  if(d<now)return"past";
-  return"future";
+  const now = sod(new Date());
+  if(+sod(d) === +now)return "current";
+  if(d < now)return "past";
+  return "future";
 }
 
 function tile(lines,cls,onClick,id){
-  const t=document.createElement("div");
-  t.className="tile "+(cls||"");
-  if(id)t.id=id;
-  t.innerHTML=`<div class="tile-text">${lines.join("<br>")}</div>`;
-  if(onClick)t.onclick=onClick;
+  const t = document.createElement("div");
+  t.className = "tile " + (cls || "");
+  if(id)t.id = id;
+  t.innerHTML = `<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>`;
+  if(onClick)t.onclick = onClick;
   grid.appendChild(t);
 }
 
 function scrollToCurrent(){
   setTimeout(()=>{
-    const cur=document.getElementById("currentTile");
-    if(cur) gridWrap.scrollTop = Math.max(0, cur.offsetTop - 8);
-  },50);
+    const cur = document.getElementById("currentTile");
+    if(cur){
+      gridWrap.scrollTop = Math.max(0, cur.offsetTop - 120);
+    }
+  },60);
 }
 
 function render(mode,data=null,push=true){
-  if(push) historyStack.push({...currentRender});
-  currentRender={mode,data};
+  if(push)historyStack.push({...currentRender});
+  currentRender = {mode,data};
 
-  if(mode==="years") renderYears();
-  if(mode==="months") renderMonths();
-  if(mode==="weeks") renderWeeks();
-  if(mode==="days") renderDays();
-  if(mode==="yearMonths") renderYearMonths(data.year);
-  if(mode==="monthWeeks") renderMonthWeeks(data.year,data.month);
-  if(mode==="weekDays") renderWeekDays(data.start);
+  if(mode==="years")renderYears();
+  if(mode==="months")renderMonths();
+  if(mode==="weeks")renderWeeks();
+  if(mode==="days")renderDays();
+  if(mode==="yearMonths")renderYearMonths(data.year);
+  if(mode==="monthWeeks")renderMonthWeeks(data.year,data.month);
+  if(mode==="weekDays")renderWeekDays(data.start);
 }
 
 function renderYears(){
   setState("Lifetime Grid","1987 — 2097",8);
-  const nowY=new Date().getFullYear();
+
+  const nowY = new Date().getFullYear();
 
   for(let y=1987;y<=2097;y++){
-    const cls=y===nowY?"current":y<nowY?"past":"future";
+    const cls = y===nowY ? "current" : y<nowY ? "past" : "future";
+
     tile(
-      [`${y}`,`Y /// ${yearNum(y)}`,y===nowY?"CURRENT YEAR":""],
+      [`${y}`,`Y /// ${yearNum(y)}`,y===nowY ? "CURRENT YEAR" : ""],
       cls,
       ()=>render("yearMonths",{year:y}),
-      y===nowY?"currentTile":null
+      y===nowY ? "currentTile" : null
     );
   }
+
   scrollToCurrent();
 }
 
 function renderYearMonths(y){
   setState("Year Grid",`${y} / Y /// ${yearNum(y)}`,4);
-  const now=new Date();
+
+  const now = new Date();
 
   for(let m=0;m<12;m++){
-    const d=new Date(y,m,1);
-    const isCurrent=y===now.getFullYear() && m===now.getMonth();
+    const d = new Date(y,m,1);
+    const isCurrent = y===now.getFullYear() && m===now.getMonth();
+
     tile(
-      [`${MONTHS[m]} ${y}`,`M /// ${monthNum(y,m)}`,`D /// ${dayNum(d)}`],
+      [`${MONTHS[m]}`,`M /// ${monthNum(y,m)}`],
       clsForDate(d),
       ()=>render("monthWeeks",{year:y,month:m}),
-      isCurrent?"currentTile":null
+      isCurrent ? "currentTile" : null
     );
   }
+
   scrollToCurrent();
 }
 
 function renderMonths(){
   setState("Continuous Month Grid","M /// 1 — M /// 1320",6);
-  const now=new Date();
+
+  const now = new Date();
 
   for(let y=1987;y<=2097;y++){
     for(let m=0;m<12;m++){
-      const d=new Date(y,m,1);
+      const d = new Date(y,m,1);
       if(d>=END)break;
-      const isCurrent=y===now.getFullYear() && m===now.getMonth();
+
+      const isCurrent = y===now.getFullYear() && m===now.getMonth();
+
       tile(
-        [`${MONTHS[m]} ${y}`,`M /// ${monthNum(y,m)}`,`D /// ${dayNum(d)}`],
+        [`${MONTHS[m]}`,`M /// ${monthNum(y,m)}`],
         clsForDate(d),
         ()=>render("monthWeeks",{year:y,month:m}),
-        isCurrent?"currentTile":null
+        isCurrent ? "currentTile" : null
       );
     }
   }
+
   scrollToCurrent();
 }
 
 function renderMonthWeeks(y,m){
   setState("Month Grid",`${MONTHS[m]} ${y}`,4);
-  const now=sod(new Date());
-  const first=new Date(y,m,1);
-  const last=new Date(y,m+1,0);
-  let start=new Date(first);
+
+  const now = sod(new Date());
+  const first = new Date(y,m,1);
+  const last = new Date(y,m+1,0);
+  let start = new Date(first);
 
   while(start<=last){
-    const weekStart=new Date(start);
-    const weekEnd=addDays(weekStart,6);
-    const isCurrent=now>=weekStart && now<=weekEnd;
+    const weekStart = new Date(start);
+    const weekEnd = addDays(weekStart,6);
+    const isCurrent = now>=weekStart && now<=weekEnd;
 
     tile(
-      [`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} — ${MONTHS[weekEnd.getMonth()]} ${weekEnd.getDate()}`,`W /// ${weekNumFromStart(weekStart)}`,`D /// ${dayNum(weekStart)}`],
+      [formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],
       clsForDate(weekStart),
       ()=>render("weekDays",{start:weekStart}),
-      isCurrent?"currentTile":null
+      isCurrent ? "currentTile" : null
     );
-    start=addDays(start,7);
+
+    start = addDays(start,7);
   }
+
   scrollToCurrent();
 }
 
 function renderWeeks(){
-  setState("Continuous Week Grid","W /// 1 — END",6);
-  const now=sod(new Date());
-  let start=new Date(BIRTH);
+  setState("Continuous Week Grid",`W /// 1 — W /// ${totalWeeks()}`,6);
+
+  const now = sod(new Date());
+  let start = new Date(BIRTH);
 
   while(start<END){
-    const weekStart=new Date(start);
-    const weekEnd=addDays(weekStart,6);
-    const isCurrent=now>=weekStart && now<=weekEnd;
+    const weekStart = new Date(start);
+    const weekEnd = addDays(weekStart,6);
+    const isCurrent = now>=weekStart && now<=weekEnd;
 
     tile(
-      [`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} ${weekStart.getFullYear()}`,`W /// ${weekNumFromStart(weekStart)}`,`D /// ${dayNum(weekStart)}`],
+      [formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],
       clsForDate(weekStart),
       ()=>render("weekDays",{start:weekStart}),
-      isCurrent?"currentTile":null
+      isCurrent ? "currentTile" : null
     );
-    start=addDays(start,7);
+
+    start = addDays(start,7);
   }
+
   scrollToCurrent();
 }
 
 function renderWeekDays(start){
-  const weekStart=sod(start);
-  const weekEnd=addDays(weekStart,6);
-  setState("Week Grid",`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} — ${MONTHS[weekEnd.getMonth()]} ${weekEnd.getDate()}`,7);
+  const weekStart = sod(start);
+  const weekEnd = addDays(weekStart,6);
+
+  setState("Week Grid",formatWeekRange(weekStart),7);
 
   for(let i=0;i<7;i++){
-    const d=addDays(weekStart,i);
+    const d = addDays(weekStart,i);
+
     tile(
-      [`${MONTHS[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`,`D /// ${dayNum(d)}`,d.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()],
+      [formatMonthDay(d),`D /// ${dayNum(d)}`],
       clsForDate(d),
       ()=>alert(`${d.toDateString()}\nD /// ${dayNum(d)}\nW /// ${weekNumFromStart(d)}\nM /// ${monthNum(d.getFullYear(),d.getMonth())}\nY /// ${yearNum(d.getFullYear())}`),
-      +sod(d)===+sod(new Date())?"currentTile":null
+      +sod(d)===+sod(new Date()) ? "currentTile" : null
     );
   }
+
   scrollToCurrent();
 }
 
 function renderDays(){
   setState("Daily Grid","CURRENT WINDOW",7);
-  const today=sod(new Date());
-  const start=addDays(today,-180);
-  const end=addDays(today,365);
 
-  let d=clampDate(start);
+  const today = sod(new Date());
+  const start = addDays(today,-180);
+  const end = addDays(today,365);
+
+  let d = clampDate(start);
+
   while(d<end && d<END){
-    const cur=new Date(d);
+    const cur = new Date(d);
+
     tile(
-      [`${MONTHS[cur.getMonth()]} ${cur.getDate()} ${cur.getFullYear()}`,`D /// ${dayNum(cur)}`,cur.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()],
+      [formatMonthDay(cur),`D /// ${dayNum(cur)}`],
       clsForDate(cur),
       ()=>alert(`${cur.toDateString()}\nD /// ${dayNum(cur)}\nW /// ${weekNumFromStart(cur)}\nM /// ${monthNum(cur.getFullYear(),cur.getMonth())}\nY /// ${yearNum(cur.getFullYear())}`),
-      +sod(cur)===+today?"currentTile":null
+      +sod(cur)===+today ? "currentTile" : null
     );
-    d=addDays(d,1);
+
+    d = addDays(d,1);
   }
+
   scrollToCurrent();
 }
 
 function goBack(){
-  const last=historyStack.pop();
-  if(!last){render("years",null,false);return}
+  const last = historyStack.pop();
+  if(!last){
+    render("years",null,false);
+    return;
+  }
   render(last.mode,last.data,false);
 }
 
 meta();
 render("years",null,false);
 </script>
+
 </body>
 </html>

@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3.3 -->
+<!-- NORTH STAR v0.3.4 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -30,9 +30,10 @@ body{
 }
 
 .topbar{
-  height:46px;
-  display:flex;
-  justify-content:space-between;
+  height:70px;
+  display:grid;
+  grid-template-columns:1fr 420px 1fr;
+  align-items:flex-start;
   font-weight:800;
 }
 
@@ -54,6 +55,55 @@ body{
   line-height:1.35;
 }
 
+.meter{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  padding-top:2px;
+}
+
+#meterLabel{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  opacity:.8;
+}
+
+#meterGrid{
+  display:grid;
+  gap:2px;
+  justify-content:center;
+  max-width:420px;
+}
+
+.meter-square{
+  width:6px;
+  height:6px;
+  border:1px solid rgba(255,255,255,.36);
+  background:rgba(255,255,255,.08);
+}
+
+.meter-square.filled{
+  background:#eee;
+  border-color:#eee;
+}
+
+.meter-square.current{
+  background:#eee;
+  border-color:#eee;
+  box-shadow:0 0 0 1px rgba(255,255,255,.55);
+}
+
+#meterSub{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  opacity:.62;
+}
+
 .nav{
   display:flex;
   gap:10px;
@@ -71,55 +121,6 @@ button{
   font-weight:900;
   letter-spacing:1px;
   text-transform:uppercase;
-}
-
-.horizon{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  margin-top:-2px;
-  margin-bottom:2px;
-}
-
-#horizonLabel{
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.7px;
-  text-transform:uppercase;
-  opacity:.72;
-}
-
-#horizonGrid{
-  display:grid;
-  grid-template-columns:repeat(37, 1fr);
-  gap:2px;
-  width:100%;
-}
-
-.horizon-square{
-  height:6px;
-  border:1px solid rgba(255,255,255,.45);
-  background:transparent;
-  position:relative;
-  overflow:hidden;
-}
-
-.horizon-square.filled{
-  background:rgba(255,255,255,.28);
-}
-
-.horizon-square.current{
-  border-color:#eee;
-  background:rgba(255,255,255,.12);
-}
-
-.horizon-square .inner{
-  position:absolute;
-  left:0;
-  top:0;
-  height:100%;
-  background:#eee;
-  opacity:.8;
 }
 
 .grid-wrap{
@@ -214,6 +215,13 @@ button{
       <div class="brand">north star</div>
       <div class="label" id="viewLabel"></div>
     </div>
+
+    <div class="meter">
+      <div id="meterLabel"></div>
+      <div id="meterGrid"></div>
+      <div id="meterSub"></div>
+    </div>
+
     <div class="meta" id="lifeMeta"></div>
   </div>
 
@@ -226,11 +234,6 @@ button{
     <div class="view-title" id="currentView"></div>
   </div>
 
-  <div class="horizon">
-    <div id="horizonLabel"></div>
-    <div id="horizonGrid"></div>
-  </div>
-
   <div class="grid-wrap" id="gridWrap">
     <div id="grid" class="grid"></div>
   </div>
@@ -238,7 +241,7 @@ button{
 </div>
 
 <script>
-const APP_VERSION = "0.3.3";
+const APP_VERSION = "0.3.4";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);
@@ -248,9 +251,7 @@ const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV
 let historyStack = [];
 let currentRender = {mode:"years", data:null};
 
-function sod(d){
-  return new Date(d.getFullYear(),d.getMonth(),d.getDate());
-}
+function sod(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
 
 function addDays(d,n){
   const x = new Date(d);
@@ -300,6 +301,29 @@ function formatWeekRange(start){
   return `${MONTHS[start.getMonth()]} ${start.getDate()}—${MONTHS[end.getMonth()]} ${end.getDate()}`;
 }
 
+function dayOfYear(d){
+  const start = new Date(d.getFullYear(),0,1);
+  return Math.floor((sod(d)-sod(start))/MS_DAY)+1;
+}
+
+function daysInYear(y){
+  return new Date(y,1,29).getMonth() === 1 ? 366 : 365;
+}
+
+function weekOfYearApprox(d){
+  return Math.floor((dayOfYear(d)-1)/7)+1;
+}
+
+function weeksInCurrentYear(){
+  return Math.ceil(daysInYear(new Date().getFullYear()) / 7);
+}
+
+function daysLeftInYear(){
+  const now = sod(new Date());
+  const last = new Date(now.getFullYear(),11,31);
+  return Math.floor((sod(last)-now)/MS_DAY);
+}
+
 function meta(){
   const now = new Date();
   const days = dayNum(now);
@@ -312,50 +336,55 @@ function meta(){
     `<span style="opacity:.55">VER ${APP_VERSION}</span>`;
 }
 
-function updateHorizon(mode){
+function updateMeter(mode){
   const now = new Date();
-  const currentYear = yearNum(now.getFullYear());
-  const currentMonth = now.getMonth() + 1;
-  const startOfYear = new Date(now.getFullYear(),0,1);
-  const dayOfYear = Math.floor((sod(now)-sod(startOfYear))/MS_DAY)+1;
-  const weekOfYear = Math.floor((dayOfYear-1)/7)+1;
-
-  let label = `CURRENT YEAR: ${currentYear}`;
-  let innerPercent = null;
+  let total = 111;
+  let current = yearNum(now.getFullYear()) + 1;
+  let label = `CURRENT YEAR: ${yearNum(now.getFullYear())}`;
+  let sub = "";
 
   if(mode==="months" || mode==="yearMonths" || mode==="monthWeeks"){
+    total = 12;
+    current = now.getMonth()+1;
     label = `CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;
-    innerPercent = currentMonth / 12;
+    sub = `MONTH ${current} OF 12`;
   }
 
   if(mode==="weeks" || mode==="weekDays"){
+    total = weeksInCurrentYear();
+    current = weekOfYearApprox(now);
     label = `CURRENT WEEK: ${weekNumFromStart(now)}`;
-    innerPercent = Math.min(1, weekOfYear / 52);
+    sub = `WEEK ${current} OF ${total}`;
   }
 
   if(mode==="days"){
+    total = daysInYear(now.getFullYear());
+    current = dayOfYear(now);
     label = `CURRENT DAY: ${dayNum(now)}`;
-    innerPercent = Math.min(1, dayOfYear / 365);
+    sub = `DAYS LEFT: ${daysLeftInYear()}`;
   }
 
-  horizonLabel.innerText = label;
-  horizonGrid.innerHTML = "";
+  if(mode==="years"){
+    sub = `YEAR ${yearNum(now.getFullYear())} OF 110`;
+  }
 
-  for(let y=0;y<=110;y++){
+  meterLabel.innerText = label;
+  meterSub.innerText = sub;
+  meterGrid.innerHTML = "";
+
+  let cols = total;
+  if(total > 60) cols = 37;
+  if(total <= 12) cols = total;
+  if(total > 12 && total <= 60) cols = 26;
+
+  meterGrid.style.gridTemplateColumns = `repeat(${cols}, 6px)`;
+
+  for(let i=1;i<=total;i++){
     const sq = document.createElement("div");
-    sq.className = "horizon-square";
-
-    if(y < currentYear) sq.classList.add("filled");
-    if(y === currentYear) sq.classList.add("current");
-
-    if(y === currentYear && innerPercent !== null){
-      const inner = document.createElement("div");
-      inner.className = "inner";
-      inner.style.width = `${innerPercent*100}%`;
-      sq.appendChild(inner);
-    }
-
-    horizonGrid.appendChild(sq);
+    sq.className = "meter-square";
+    if(i < current) sq.classList.add("filled");
+    if(i === current) sq.classList.add("current");
+    meterGrid.appendChild(sq);
   }
 }
 
@@ -365,7 +394,7 @@ function setState(label,title,cols){
   grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   grid.innerHTML = "";
   gridWrap.scrollTop = 0;
-  updateHorizon(currentRender.mode);
+  updateMeter(currentRender.mode);
 }
 
 function clsForDate(d){

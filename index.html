@@ -6,187 +6,184 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="North Star">
-  <meta name="theme-color" content="#0b1020">
-  <link rel="apple-touch-icon" href="icon.png">
-  <link rel="icon" href="icon.png">
+  <meta name="theme-color" content="#050505">
 
   <style>
     *{box-sizing:border-box}
+
     body{
       margin:0;
-      min-height:100vh;
-      background:#0b1020;
-      color:#f4efe3;
-      font-family:Georgia,serif;
+      width:100vw;
+      height:100vh;
+      background:#050505;
+      color:#f2f2f2;
+      font-family:Arial, Helvetica, sans-serif;
       overflow:hidden;
     }
 
     .app{
       width:100vw;
       height:100vh;
+      padding:18px;
       display:flex;
       flex-direction:column;
-      padding:24px;
-      gap:18px;
+      gap:12px;
     }
 
     .topbar{
+      height:42px;
       display:flex;
       justify-content:space-between;
-      align-items:center;
-      border-bottom:1px solid rgba(244,239,227,.25);
-      padding-bottom:14px;
+      align-items:flex-start;
+      letter-spacing:.5px;
+      font-weight:800;
     }
 
-    .title{
-      font-size:34px;
-      letter-spacing:3px;
-      font-weight:bold;
+    .brand{
+      font-size:16px;
+      text-transform:lowercase;
+      opacity:.95;
     }
 
-    .subtitle{
-      font-size:14px;
-      opacity:.7;
-      letter-spacing:1px;
+    .meta{
+      font-size:12px;
+      opacity:.8;
       text-align:right;
+      line-height:1.4;
     }
 
-    .life-row{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:14px;
-    }
-
-    .card{
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(244,239,227,.18);
-      border-radius:18px;
-      padding:18px;
-      box-shadow:0 10px 30px rgba(0,0,0,.25);
-    }
-
-    .label{
-      font-size:13px;
-      opacity:.65;
-      letter-spacing:1px;
-      text-transform:uppercase;
-      margin-bottom:8px;
-    }
-
-    .value{
-      font-size:30px;
-      font-weight:bold;
-    }
-
-    .progress-wrap{
-      height:18px;
-      background:rgba(255,255,255,.12);
-      border-radius:999px;
-      overflow:hidden;
-      margin-top:10px;
-    }
-
-    .progress{
-      height:100%;
-      width:0%;
-      background:#f4efe3;
-    }
-
-    .tabs{
+    .nav{
       display:flex;
       gap:10px;
+      align-items:center;
+      height:34px;
     }
 
     button{
-      border:1px solid rgba(244,239,227,.3);
-      background:rgba(255,255,255,.06);
-      color:#f4efe3;
+      background:transparent;
+      color:#f2f2f2;
+      border:1px solid rgba(255,255,255,.65);
+      padding:7px 13px;
       border-radius:999px;
-      padding:12px 22px;
-      font-size:15px;
+      font-size:12px;
+      font-weight:800;
       letter-spacing:1px;
+      text-transform:uppercase;
     }
 
-    button.active{
-      background:#f4efe3;
-      color:#0b1020;
-      font-weight:bold;
+    .label{
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:1px;
+      opacity:.75;
+      text-transform:uppercase;
     }
 
-    .screen{
-      display:none;
+    .grid-wrap{
       flex:1;
       overflow:auto;
-    }
-
-    .screen.active{
-      display:block;
-    }
-
-    .calendar{
-      display:grid;
-      grid-template-columns:repeat(7,1fr);
-      gap:8px;
-      margin-top:14px;
-    }
-
-    .day{
-      min-height:88px;
-      border-radius:14px;
-      border:1px solid rgba(244,239,227,.16);
-      background:rgba(255,255,255,.045);
-      padding:10px;
+      border:1px solid rgba(255,255,255,.22);
+      background:#111;
       position:relative;
     }
 
-    .day.today{
-      outline:3px solid #f4efe3;
-    }
-
-    .date-num{
-      font-size:20px;
-      font-weight:bold;
-    }
-
-    .life-num{
-      font-size:12px;
-      opacity:.6;
-      margin-top:4px;
-    }
-
-    textarea{
-      width:100%;
-      min-height:180px;
-      background:rgba(255,255,255,.06);
-      color:#f4efe3;
-      border:1px solid rgba(244,239,227,.2);
-      border-radius:16px;
-      padding:16px;
-      font-size:18px;
-      font-family:Georgia,serif;
-      resize:none;
-    }
-
-    .principles{
+    .grid{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:14px;
+      min-height:100%;
+      position:relative;
     }
 
-    .principle{
-      min-height:120px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      font-size:22px;
+    .tile{
+      position:relative;
+      min-height:116px;
+      border-right:2px solid rgba(255,255,255,.55);
+      border-bottom:2px solid rgba(255,255,255,.55);
+      background:#1a1d22;
+      padding:12px;
+      cursor:pointer;
+      overflow:hidden;
     }
 
-    .small{
+    .tile:nth-child(even){
+      background:#171a1f;
+    }
+
+    .tile.current{
+      outline:4px solid #f2f2f2;
+      outline-offset:-4px;
+      background:#20242b;
+    }
+
+    .tile:hover{
+      background:#242832;
+    }
+
+    .tile::after{
+      content:"+";
+      position:absolute;
+      right:-8px;
+      bottom:-12px;
+      color:#f2f2f2;
+      font-size:26px;
+      font-weight:300;
+      z-index:3;
+      opacity:.9;
+    }
+
+    .tile-title{
+      font-size:24px;
+      font-weight:900;
+      line-height:.95;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+    }
+
+    .tile-sub{
+      margin-top:4px;
       font-size:13px;
-      opacity:.65;
-      margin-top:6px;
+      font-weight:800;
+      opacity:.78;
+      text-transform:uppercase;
+    }
+
+    .tile-small{
+      position:absolute;
+      left:12px;
+      bottom:10px;
+      font-size:12px;
+      font-weight:800;
+      opacity:.7;
+      text-transform:uppercase;
+    }
+
+    .future{
+      opacity:.38;
+    }
+
+    .past{
+      opacity:.82;
+    }
+
+    .day-tile{
+      min-height:104px;
+    }
+
+    .empty{
+      background:#0e0f12;
+      opacity:.3;
+      cursor:default;
+    }
+
+    .empty::after{
+      content:"";
+    }
+
+    .view-title{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      opacity:.9;
     }
   </style>
 </head>
@@ -196,63 +193,20 @@
 
   <div class="topbar">
     <div>
-      <div class="title">NORTH STAR</div>
-      <div class="label">Visual Life Navigation System</div>
+      <div class="brand">north star</div>
+      <div class="label" id="viewLabel">Lifetime Grid</div>
     </div>
-    <div class="subtitle" id="todayText"></div>
+    <div class="meta" id="lifeMeta"></div>
   </div>
 
-  <div class="life-row">
-    <div class="card">
-      <div class="label">Day of Life</div>
-      <div class="value" id="dayOfLife"></div>
-    </div>
-    <div class="card">
-      <div class="label">Age</div>
-      <div class="value" id="ageText"></div>
-    </div>
-    <div class="card">
-      <div class="label">Year of Life</div>
-      <div class="value" id="yearOfLife"></div>
-    </div>
-    <div class="card">
-      <div class="label">Life Horizon</div>
-      <div class="value" id="lifePercent"></div>
-      <div class="progress-wrap"><div class="progress" id="lifeProgress"></div></div>
-    </div>
+  <div class="nav">
+    <button onclick="showLifetime()">Lifetime</button>
+    <button onclick="goBack()">Back</button>
+    <div class="view-title" id="currentView"></div>
   </div>
 
-  <div class="tabs">
-    <button class="active" onclick="showScreen('timeline', this)">TIMELINE</button>
-    <button onclick="showScreen('today', this)">TODAY</button>
-    <button onclick="showScreen('northstar', this)">NORTH STAR</button>
-  </div>
-
-  <div id="timeline" class="screen active">
-    <div class="card">
-      <div class="label" id="monthLabel"></div>
-      <div class="calendar" id="calendar"></div>
-    </div>
-  </div>
-
-  <div id="today" class="screen">
-    <div class="card">
-      <div class="label">Today’s Reflection</div>
-      <textarea id="journal" placeholder="What part of my North Star did I live today?"></textarea>
-    </div>
-  </div>
-
-  <div id="northstar" class="screen">
-    <div class="principles">
-      <div class="card principle">Freedom<div class="small">Own time. Choose direction.</div></div>
-      <div class="card principle">Creation<div class="small">Make work. Build worlds.</div></div>
-      <div class="card principle">Health<div class="small">Sleep. Move. Strengthen.</div></div>
-      <div class="card principle">Learning<div class="small">Read. Study. Refine.</div></div>
-      <div class="card principle">Nature<div class="small">Silence. Land. Open air.</div></div>
-      <div class="card principle">Presence<div class="small">Live consciously.</div></div>
-      <div class="card principle">Generosity<div class="small">Help others rise.</div></div>
-      <div class="card principle">Mastery<div class="small">Trade. Practice. Improve.</div></div>
-    </div>
+  <div class="grid-wrap">
+    <div id="grid" class="grid"></div>
   </div>
 
 </div>
@@ -260,7 +214,13 @@
 <script>
 const BIRTH = new Date(1987, 5, 26);
 const HORIZON_YEARS = 110;
+const END_YEAR = BIRTH.getFullYear() + HORIZON_YEARS;
 const MS_DAY = 1000 * 60 * 60 * 24;
+
+let viewStack = [];
+let currentMode = "lifetime";
+let selectedYear = null;
+let selectedMonth = null;
 
 function startOfDay(d){
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -270,73 +230,163 @@ function dayNumber(date){
   return Math.floor((startOfDay(date) - startOfDay(BIRTH)) / MS_DAY) + 1;
 }
 
-function updateLifeStats(){
+function ageYears(date=new Date()){
+  return (date - BIRTH) / (MS_DAY * 365.2425);
+}
+
+function updateMeta(){
   const now = new Date();
   const daysAlive = dayNumber(now);
   const totalDays = Math.floor(365.2425 * HORIZON_YEARS);
-  const percent = (daysAlive / totalDays) * 100;
-  const ageYears = (now - BIRTH) / (MS_DAY * 365.2425);
+  const percent = ((daysAlive / totalDays) * 100).toFixed(2);
 
-  document.getElementById("todayText").innerText =
-    now.toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-
-  document.getElementById("dayOfLife").innerText = daysAlive.toLocaleString();
-  document.getElementById("ageText").innerText = ageYears.toFixed(2);
-  document.getElementById("yearOfLife").innerText = Math.ceil(ageYears);
-  document.getElementById("lifePercent").innerText = percent.toFixed(2) + "%";
-  document.getElementById("lifeProgress").style.width = percent + "%";
+  document.getElementById("lifeMeta").innerHTML =
+    `DAY ${daysAlive.toLocaleString()}<br>AGE ${ageYears(now).toFixed(2)}<br>${percent}% TO 110`;
 }
 
-function buildCalendar(){
+function setGridColumns(count){
+  document.getElementById("grid").style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+}
+
+function clearGrid(){
+  document.getElementById("grid").innerHTML = "";
+}
+
+function makeTile({title, sub, small, className="", onClick=null}){
+  const tile = document.createElement("div");
+  tile.className = "tile " + className;
+  tile.innerHTML = `
+    <div class="tile-title">${title}</div>
+    <div class="tile-sub">${sub || ""}</div>
+    <div class="tile-small">${small || ""}</div>
+  `;
+  if(onClick) tile.onclick = onClick;
+  return tile;
+}
+
+function showLifetime(){
+  currentMode = "lifetime";
+  selectedYear = null;
+  selectedMonth = null;
+  viewStack = [];
+  clearGrid();
+  setGridColumns(8);
+
+  document.getElementById("viewLabel").innerText = "Lifetime Grid";
+  document.getElementById("currentView").innerText = `${BIRTH.getFullYear()} — ${END_YEAR}`;
+
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const currentYear = now.getFullYear();
 
-  document.getElementById("monthLabel").innerText =
-    now.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  for(let y = BIRTH.getFullYear(); y <= END_YEAR; y++){
+    const yearOfLife = y - BIRTH.getFullYear() + 1;
+    let cls = "";
+    if(y < currentYear) cls = "past";
+    if(y > currentYear) cls = "future";
+    if(y === currentYear) cls = "current";
 
-  const cal = document.getElementById("calendar");
-  cal.innerHTML = "";
+    const tile = makeTile({
+      title:y,
+      sub:`Y /// ${yearOfLife}`,
+      small: y === currentYear ? "CURRENT YEAR" : "",
+      className:cls,
+      onClick:()=>showYear(y)
+    });
 
+    document.getElementById("grid").appendChild(tile);
+  }
+}
+
+function showYear(year){
+  viewStack.push({mode:currentMode, year:selectedYear, month:selectedMonth});
+  currentMode = "year";
+  selectedYear = year;
+  selectedMonth = null;
+  clearGrid();
+  setGridColumns(4);
+
+  document.getElementById("viewLabel").innerText = "Year Grid";
+  document.getElementById("currentView").innerText = `${year} / Y /// ${year - BIRTH.getFullYear() + 1}`;
+
+  const now = new Date();
+  const monthNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  for(let m=0;m<12;m++){
+    const first = new Date(year, m, 1);
+    const monthOfLife = (year - BIRTH.getFullYear()) * 12 + m + 1;
+    let cls = "";
+    if(year < now.getFullYear() || (year === now.getFullYear() && m < now.getMonth())) cls = "past";
+    if(year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth())) cls = "future";
+    if(year === now.getFullYear() && m === now.getMonth()) cls = "current";
+
+    const tile = makeTile({
+      title:monthNames[m],
+      sub:`M /// ${monthOfLife}`,
+      small:`DAY ${dayNumber(first).toLocaleString()}`,
+      className:cls,
+      onClick:()=>showMonth(year,m)
+    });
+
+    document.getElementById("grid").appendChild(tile);
+  }
+}
+
+function showMonth(year, month){
+  viewStack.push({mode:currentMode, year:selectedYear, month:selectedMonth});
+  currentMode = "month";
+  selectedYear = year;
+  selectedMonth = month;
+  clearGrid();
+  setGridColumns(7);
+
+  const monthNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  document.getElementById("viewLabel").innerText = "Month Grid";
+  document.getElementById("currentView").innerText = `${monthNames[month]} ${year}`;
+
+  const now = new Date();
   const first = new Date(year, month, 1);
   const startDay = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for(let i=0;i<startDay;i++){
-    const blank = document.createElement("div");
-    cal.appendChild(blank);
+    const empty = document.createElement("div");
+    empty.className = "tile empty";
+    document.getElementById("grid").appendChild(empty);
   }
 
   for(let d=1; d<=daysInMonth; d++){
     const date = new Date(year, month, d);
-    const cell = document.createElement("div");
-    cell.className = "day";
-    if(d === now.getDate()) cell.classList.add("today");
+    let cls = "day-tile";
+    if(date < startOfDay(now)) cls += " past";
+    if(date > startOfDay(now)) cls += " future";
+    if(date.getFullYear()===now.getFullYear() && date.getMonth()===now.getMonth() && date.getDate()===now.getDate()) cls += " current";
 
-    cell.innerHTML = `
-      <div class="date-num">${d}</div>
-      <div class="life-num">Day ${dayNumber(date).toLocaleString()}</div>
-    `;
-    cal.appendChild(cell);
+    const tile = makeTile({
+      title:d,
+      sub:`D /// ${dayNumber(date).toLocaleString()}`,
+      small: date.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase(),
+      className:cls,
+      onClick:()=>alert(`${date.toDateString()}\nDay ${dayNumber(date).toLocaleString()}`)
+    });
+
+    document.getElementById("grid").appendChild(tile);
   }
 }
 
-function showScreen(id, btn){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  btn.classList.add("active");
+function goBack(){
+  const last = viewStack.pop();
+  if(!last){
+    showLifetime();
+    return;
+  }
+
+  if(last.mode === "lifetime") showLifetime();
+  if(last.mode === "year") showYear(last.year);
+  if(last.mode === "month") showMonth(last.year,last.month);
 }
 
-const journal = document.getElementById("journal");
-journal.value = localStorage.getItem("northStarJournal_" + dayNumber(new Date())) || "";
-journal.addEventListener("input", ()=>{
-  localStorage.setItem("northStarJournal_" + dayNumber(new Date()), journal.value);
-});
-
-updateLifeStats();
-buildCalendar();
+updateMeta();
+showLifetime();
 </script>
-
 </body>
 </html>

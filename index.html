@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3.7 -->
+<!-- NORTH STAR v0.4.0 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -30,90 +30,52 @@ button{background:#0d0f12;color:#eee;border:1px solid rgba(255,255,255,.22);padd
 button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .grid-wrap{flex:1;overflow:auto;background:#08090a;scroll-behavior:auto}
 .grid{display:grid;min-height:100%;border-top:2px solid rgba(255,255,255,.55);border-left:2px solid rgba(255,255,255,.55)}
-.tile{position:relative;min-height:118px;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer}
-.tile:nth-child(even){background:#111418}
+.tile{position:relative;min-height:118px;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer;background-size:cover;background-position:center;background-repeat:no-repeat}
+.tile:nth-child(even){background-color:#111418}
+.tile.has-image .tile-text{text-shadow:0 1px 3px #000,0 0 8px #000}
+.tile.has-image::before{box-shadow:0 0 0 999px rgba(0,0,0,.18) inset}
 .tile.has-photo{background:linear-gradient(135deg,#20242b,#0d0f12)}
-.tile.has-photo::marker{display:none}
-.tile.has-photo .photo-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;background:#eee}
-.tile.current{outline:4px solid #eee;outline-offset:-4px;background:#20242b;z-index:4}
+.tile.has-photo .photo-dot,.tile.has-image .photo-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;background:#eee;z-index:60}
+.tile.current{outline:4px solid #eee;outline-offset:-4px;background-color:#20242b;z-index:4}
 .tile.future{opacity:.38}.tile.past{opacity:.82}
 .tile::before,.tile::after{content:"";position:absolute;background:#eee;z-index:50;pointer-events:none;opacity:1}
 .tile::before{width:10px;height:2px;right:-6px;bottom:-2px}
 .tile::after{width:2px;height:10px;right:-2px;bottom:-6px}
-.tile-text{font-size:10px;font-weight:900;line-height:1.08;letter-spacing:.45px;text-transform:uppercase}
+.tile-text{position:relative;z-index:70;font-size:10px;font-weight:900;line-height:1.08;letter-spacing:.45px;text-transform:uppercase}
 .empty{background:#070707;opacity:.18;cursor:default}
 .empty::before,.empty::after{content:none}
 
 .panel{
-  position:fixed;
-  right:22px;
-  bottom:22px;
-  width:340px;
-  background:#090a0c;
-  border:2px solid rgba(255,255,255,.55);
-  padding:14px;
-  z-index:200;
-  display:none;
-  box-shadow:0 20px 60px rgba(0,0,0,.65);
+  position:fixed;right:22px;bottom:22px;width:380px;background:#090a0c;
+  border:2px solid rgba(255,255,255,.55);padding:14px;z-index:200;display:none;
+  box-shadow:0 20px 60px rgba(0,0,0,.65)
 }
-
 .panel.active{display:block}
-
-.panel-title{
-  font-size:12px;
-  font-weight:900;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  margin-bottom:10px;
+.panel-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.panel-meta{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;line-height:1.45;margin-bottom:10px}
+textarea,input{
+  width:100%;background:#050505;color:#eee;border:1px solid rgba(255,255,255,.25);
+  padding:10px;font-size:12px;font-weight:800;outline:none
 }
-
-.panel-meta{
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.7px;
-  text-transform:uppercase;
-  opacity:.65;
-  line-height:1.45;
-  margin-bottom:10px;
-}
-
-textarea{
-  width:100%;
-  height:110px;
-  background:#050505;
-  color:#eee;
-  border:1px solid rgba(255,255,255,.25);
-  padding:10px;
-  font-size:12px;
-  font-weight:800;
-  resize:none;
-  outline:none;
-}
-
-.panel-actions{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-  flex-wrap:wrap;
-}
+textarea{height:100px;resize:none}
+input{height:38px;margin-top:8px}
+.field-label{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55;margin-top:10px;margin-bottom:4px}
+.panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
 
 <body>
 <div class="app">
-
   <div class="topbar">
     <div>
       <div class="brand">north star</div>
       <div class="label" id="viewLabel"></div>
     </div>
-
     <div class="meter">
       <div id="meterLabel"></div>
       <div id="meterGrid"></div>
       <div id="meterSub"></div>
     </div>
-
     <div class="meta" id="lifeMeta"></div>
   </div>
 
@@ -131,21 +93,28 @@ textarea{
   <div class="grid-wrap" id="gridWrap">
     <div id="grid" class="grid"></div>
   </div>
-
 </div>
 
 <div class="panel" id="dayPanel">
   <div class="panel-title" id="panelTitle"></div>
   <div class="panel-meta" id="panelMeta"></div>
+
+  <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
+
+  <div class="field-label">Image URL</div>
+  <input id="imageUrl" placeholder="PASTE DIRECT IMAGE URL">
+
   <div class="panel-actions">
-    <button onclick="togglePhotoMarker()">Photo Marker</button>
+    <button onclick="saveImageUrl()">Save Image</button>
+    <button onclick="clearImageUrl()">Clear Image</button>
+    <button onclick="togglePhotoMarker()">Marker</button>
     <button onclick="closePanel()">Close</button>
   </div>
 </div>
 
 <script>
-const APP_VERSION = "0.3.7";
+const APP_VERSION = "0.4.0";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);
@@ -172,8 +141,10 @@ function daysInYear(y){return new Date(y,1,29).getMonth()===1?366:365}
 function weekOfYearApprox(d){return Math.floor((dayOfYear(d)-1)/7)+1}
 function weeksInCurrentYear(){return Math.ceil(daysInYear(new Date().getFullYear())/7)}
 function daysLeftInYear(){const now=sod(new Date());const last=new Date(now.getFullYear(),11,31);return Math.floor((sod(last)-now)/MS_DAY)}
+
 function dayKey(d){return `ns_day_${dayNum(d)}`}
 function hasPhotoMarker(d){return localStorage.getItem(dayKey(d)+"_photo")==="1"}
+function getImageUrl(d){return localStorage.getItem(dayKey(d)+"_image") || ""}
 
 function meta(){
   const now=new Date();
@@ -189,10 +160,25 @@ function updateMeter(mode){
   if(mode==="weeks"||mode==="weekDays"){total=weeksInCurrentYear();current=weekOfYearApprox(now);label=`CURRENT WEEK: ${weekNumFromStart(now)}`;sub=`WEEK ${current} OF ${total}`}
   if(mode==="days"){total=daysInYear(now.getFullYear());current=dayOfYear(now);label=`CURRENT DAY: ${dayNum(now)}`;sub=`DAYS LEFT: ${daysLeftInYear()}`}
   if(mode==="years"){sub=`YEAR ${yearNum(now.getFullYear())} OF 110`}
-  meterLabel.innerText=label;meterSub.innerText=sub;meterGrid.innerHTML="";
-  let cols=total;if(total>60)cols=37;if(total<=12)cols=total;if(total>12&&total<=60)cols=26;
+
+  meterLabel.innerText=label;
+  meterSub.innerText=sub;
+  meterGrid.innerHTML="";
+
+  let cols=total;
+  if(total>60)cols=37;
+  if(total<=12)cols=total;
+  if(total>12&&total<=60)cols=26;
+
   meterGrid.style.gridTemplateColumns=`repeat(${cols}, 6px)`;
-  for(let i=1;i<=total;i++){const sq=document.createElement("div");sq.className="meter-square";if(i<current)sq.classList.add("filled");if(i===current)sq.classList.add("current");meterGrid.appendChild(sq)}
+
+  for(let i=1;i<=total;i++){
+    const sq=document.createElement("div");
+    sq.className="meter-square";
+    if(i<current)sq.classList.add("filled");
+    if(i===current)sq.classList.add("current");
+    meterGrid.appendChild(sq);
+  }
 }
 
 function setState(label,title,cols){
@@ -207,7 +193,8 @@ function setState(label,title,cols){
 function clsForDate(d){
   const now=sod(new Date());
   let cls=+sod(d)===+now?"current":d<now?"past":"future";
-  if(hasPhotoMarker(d))cls+=" has-photo";
+  if(getImageUrl(d))cls+=" has-image";
+  else if(hasPhotoMarker(d))cls+=" has-photo";
   return cls;
 }
 
@@ -215,13 +202,22 @@ function tile(lines,cls,onClick,id,dateObj=null){
   const t=document.createElement("div");
   t.className="tile "+(cls||"");
   if(id)t.id=id;
-  t.innerHTML=`<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>${dateObj&&hasPhotoMarker(dateObj)?'<div class="photo-dot"></div>':''}`;
+
+  const image = dateObj ? getImageUrl(dateObj) : "";
+  if(image) t.style.backgroundImage = `url("${image}")`;
+
+  const marker = dateObj && (hasPhotoMarker(dateObj) || image) ? '<div class="photo-dot"></div>' : '';
+  t.innerHTML=`<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>${marker}`;
+
   if(onClick)t.onclick=onClick;
   grid.appendChild(t);
 }
 
 function scrollToCurrent(){
-  setTimeout(()=>{const cur=document.getElementById("currentTile");if(cur)gridWrap.scrollTop=Math.max(0,cur.offsetTop-180)},60);
+  setTimeout(()=>{
+    const cur=document.getElementById("currentTile");
+    if(cur)gridWrap.scrollTop=Math.max(0,cur.offsetTop-180);
+  },60);
 }
 
 function render(mode,data=null,push=true){
@@ -328,12 +324,32 @@ function openDay(d){
   panelTitle.innerText=`${formatMonthDay(selectedDay)} / D /// ${dayNum(selectedDay)}`;
   panelMeta.innerHTML=`W /// ${weekNumFromStart(selectedDay)}<br>M /// ${monthNum(selectedDay.getFullYear(),selectedDay.getMonth())}<br>Y /// ${yearNum(selectedDay.getFullYear())}`;
   dayNote.value=localStorage.getItem(dayKey(selectedDay)+"_note")||"";
+  imageUrl.value=getImageUrl(selectedDay);
   dayPanel.classList.add("active");
 }
 
 dayNote.addEventListener("input",()=>{
   if(selectedDay)localStorage.setItem(dayKey(selectedDay)+"_note",dayNote.value);
 });
+
+imageUrl.addEventListener("input",()=>{
+  if(selectedDay)localStorage.setItem(dayKey(selectedDay)+"_image",imageUrl.value.trim());
+});
+
+function saveImageUrl(){
+  if(!selectedDay)return;
+  localStorage.setItem(dayKey(selectedDay)+"_image",imageUrl.value.trim());
+  dayPanel.classList.remove("active");
+  render(currentRender.mode,currentRender.data,false);
+}
+
+function clearImageUrl(){
+  if(!selectedDay)return;
+  localStorage.removeItem(dayKey(selectedDay)+"_image");
+  imageUrl.value="";
+  dayPanel.classList.remove("active");
+  render(currentRender.mode,currentRender.data,false);
+}
 
 function togglePhotoMarker(){
   if(!selectedDay)return;

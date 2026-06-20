@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3.2 -->
+<!-- NORTH STAR v0.3.3 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -112,21 +112,30 @@ button{
 .tile.future{opacity:.38}
 .tile.past{opacity:.82}
 
+.tile::before,
 .tile::after{
-  content:"+";
+  content:"";
   position:absolute;
-  right:-9px;
-  bottom:-10px;
-  width:18px;
-  height:18px;
-  color:#eee;
-  font-size:22px;
-  line-height:18px;
-  text-align:center;
-  font-weight:700;
+  background:#eee;
   z-index:50;
-  opacity:1;
   pointer-events:none;
+  opacity:1;
+}
+
+/* horizontal arm */
+.tile::before{
+  width:10px;
+  height:2px;
+  right:-6px;
+  bottom:-2px;
+}
+
+/* vertical arm */
+.tile::after{
+  width:2px;
+  height:10px;
+  right:-2px;
+  bottom:-6px;
 }
 
 .tile-text{
@@ -176,7 +185,7 @@ button{
 </div>
 
 <script>
-const APP_VERSION = "0.3.2";
+const APP_VERSION = "0.3.3";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);

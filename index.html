@@ -24,7 +24,7 @@
     .app{
       width:100vw;
       height:100vh;
-      padding:18px;
+      padding:18px 22px 22px;
       display:flex;
       flex-direction:column;
       gap:12px;
@@ -79,11 +79,18 @@
       text-transform:uppercase;
     }
 
+    .view-title{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      opacity:.9;
+    }
+
     .grid-wrap{
       flex:1;
       overflow:auto;
-      border:1px solid rgba(255,255,255,.22);
-      background:#111;
+      background:#0b0c0e;
       position:relative;
     }
 
@@ -91,27 +98,30 @@
       display:grid;
       min-height:100%;
       position:relative;
+      border-top:2px solid rgba(255,255,255,.42);
+      border-left:2px solid rgba(255,255,255,.42);
     }
 
     .tile{
       position:relative;
       min-height:116px;
-      border-right:2px solid rgba(255,255,255,.55);
-      border-bottom:2px solid rgba(255,255,255,.55);
-      background:#1a1d22;
+      border-right:2px solid rgba(255,255,255,.42);
+      border-bottom:2px solid rgba(255,255,255,.42);
+      background:#15181c;
       padding:12px;
       cursor:pointer;
-      overflow:hidden;
+      overflow:visible;
     }
 
     .tile:nth-child(even){
-      background:#171a1f;
+      background:#121519;
     }
 
     .tile.current{
       outline:4px solid #f2f2f2;
       outline-offset:-4px;
       background:#20242b;
+      z-index:4;
     }
 
     .tile:hover{
@@ -121,13 +131,18 @@
     .tile::after{
       content:"+";
       position:absolute;
-      right:-8px;
-      bottom:-12px;
+      right:-10px;
+      bottom:-13px;
+      width:18px;
+      height:18px;
       color:#f2f2f2;
-      font-size:26px;
+      font-size:23px;
+      line-height:18px;
+      text-align:center;
       font-weight:300;
-      z-index:3;
+      z-index:5;
       opacity:.9;
+      pointer-events:none;
     }
 
     .tile-title{
@@ -169,21 +184,13 @@
     }
 
     .empty{
-      background:#0e0f12;
-      opacity:.3;
+      background:#08090a;
+      opacity:.25;
       cursor:default;
     }
 
     .empty::after{
       content:"";
-    }
-
-    .view-title{
-      font-size:14px;
-      font-weight:900;
-      letter-spacing:1px;
-      text-transform:uppercase;
-      opacity:.9;
     }
   </style>
 </head>
@@ -234,6 +241,14 @@ function ageYears(date=new Date()){
   return (date - BIRTH) / (MS_DAY * 365.2425);
 }
 
+function yearOfLife(year){
+  return year - BIRTH.getFullYear();
+}
+
+function monthOfLife(year, month){
+  return (year - BIRTH.getFullYear()) * 12 + month;
+}
+
 function updateMeta(){
   const now = new Date();
   const daysAlive = dayNumber(now);
@@ -279,7 +294,8 @@ function showLifetime(){
   const currentYear = now.getFullYear();
 
   for(let y = BIRTH.getFullYear(); y <= END_YEAR; y++){
-    const yearOfLife = y - BIRTH.getFullYear() + 1;
+    const yLife = yearOfLife(y);
+
     let cls = "";
     if(y < currentYear) cls = "past";
     if(y > currentYear) cls = "future";
@@ -287,7 +303,7 @@ function showLifetime(){
 
     const tile = makeTile({
       title:y,
-      sub:`Y /// ${yearOfLife}`,
+      sub:`Y /// ${yLife}`,
       small: y === currentYear ? "CURRENT YEAR" : "",
       className:cls,
       onClick:()=>showYear(y)
@@ -306,14 +322,15 @@ function showYear(year){
   setGridColumns(4);
 
   document.getElementById("viewLabel").innerText = "Year Grid";
-  document.getElementById("currentView").innerText = `${year} / Y /// ${year - BIRTH.getFullYear() + 1}`;
+  document.getElementById("currentView").innerText = `${year} / Y /// ${yearOfLife(year)}`;
 
   const now = new Date();
   const monthNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
   for(let m=0;m<12;m++){
     const first = new Date(year, m, 1);
-    const monthOfLife = (year - BIRTH.getFullYear()) * 12 + m + 1;
+    const mLife = monthOfLife(year, m);
+
     let cls = "";
     if(year < now.getFullYear() || (year === now.getFullYear() && m < now.getMonth())) cls = "past";
     if(year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth())) cls = "future";
@@ -321,7 +338,7 @@ function showYear(year){
 
     const tile = makeTile({
       title:monthNames[m],
-      sub:`M /// ${monthOfLife}`,
+      sub:`M /// ${mLife}`,
       small:`DAY ${dayNumber(first).toLocaleString()}`,
       className:cls,
       onClick:()=>showMonth(year,m)
@@ -356,10 +373,15 @@ function showMonth(year, month){
 
   for(let d=1; d<=daysInMonth; d++){
     const date = new Date(year, month, d);
+
     let cls = "day-tile";
     if(date < startOfDay(now)) cls += " past";
     if(date > startOfDay(now)) cls += " future";
-    if(date.getFullYear()===now.getFullYear() && date.getMonth()===now.getMonth() && date.getDate()===now.getDate()) cls += " current";
+    if(
+      date.getFullYear()===now.getFullYear() &&
+      date.getMonth()===now.getMonth() &&
+      date.getDate()===now.getDate()
+    ) cls += " current";
 
     const tile = makeTile({
       title:d,

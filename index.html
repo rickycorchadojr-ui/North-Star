@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.3 -->
+<!-- NORTH STAR v0.6.4 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -29,8 +29,8 @@ body{margin:0;width:100vw;height:100vh;background:#050505;color:#eee;font-family
 button{background:#0d0f12;color:#eee;border:1px solid rgba(255,255,255,.22);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;box-shadow:inset 0 0 0 1px rgba(0,0,0,.65)}
 button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .grid-wrap{flex:1;overflow:auto;background:#08090a;scroll-behavior:auto}
-.grid{display:grid;min-height:100%;border-top:2px solid rgba(255,255,255,.55);border-left:2px solid rgba(255,255,255,.55)}
-.tile{position:relative;min-height:118px;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer;background-size:cover;background-position:center;background-repeat:no-repeat}
+.grid{display:grid;align-content:start;min-height:100%;border-top:2px solid rgba(255,255,255,.55);border-left:2px solid rgba(255,255,255,.55)}
+.tile{position:relative;aspect-ratio:1/1;min-height:auto;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer;background-size:cover;background-position:center;background-repeat:no-repeat}
 .tile:nth-child(even){background-color:#111418}
 .tile.has-image .tile-text{text-shadow:0 1px 3px #000,0 0 8px #000}
 .tile.has-image .photo-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;background:#eee;z-index:60}
@@ -96,7 +96,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.3";
+const APP_VERSION="0.6.4";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);

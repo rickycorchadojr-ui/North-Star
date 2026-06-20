@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3 — Continuous Life Grid -->
+<!-- NORTH STAR v0.3.1 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,184 +11,259 @@
 *{box-sizing:border-box}
 body{margin:0;width:100vw;height:100vh;background:#050505;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
 .app{height:100vh;padding:18px 22px;display:flex;flex-direction:column;gap:12px}
-.topbar{height:42px;display:flex;justify-content:space-between;font-weight:800}
+.topbar{height:46px;display:flex;justify-content:space-between;font-weight:800}
 .brand{font-size:16px;text-transform:lowercase}
 .label,.meta,.view-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.75}
-.meta{text-align:right;line-height:1.4}
-.nav{display:flex;gap:10px;align-items:center}
+.meta{text-align:right;line-height:1.35}
+.nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button{background:transparent;color:#eee;border:1px solid rgba(255,255,255,.65);padding:7px 13px;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-.grid-wrap{flex:1;overflow:auto;background:#08090a}
+.grid-wrap{flex:1;overflow:auto;background:#08090a;scroll-behavior:auto}
 .grid{display:grid;min-height:100%;border-top:2px solid rgba(255,255,255,.42);border-left:2px solid rgba(255,255,255,.42)}
 .tile{position:relative;min-height:118px;border-right:2px solid rgba(255,255,255,.42);border-bottom:2px solid rgba(255,255,255,.42);background:#14171b;padding:10px;overflow:visible;cursor:pointer}
 .tile:nth-child(even){background:#111418}
 .tile.current{outline:4px solid #eee;outline-offset:-4px;background:#20242b;z-index:4}
 .tile.future{opacity:.38}.tile.past{opacity:.82}
 .tile::after{content:"+";position:absolute;right:-10px;bottom:-13px;width:18px;height:18px;color:#eee;font-size:23px;line-height:18px;text-align:center;font-weight:300;z-index:5;opacity:.9;pointer-events:none}
-.tile-title{font-size:17px;font-weight:900;line-height:1;text-transform:uppercase}
-.tile-sub{margin-top:3px;font-size:11px;font-weight:900;opacity:.78;text-transform:uppercase}
-.tile-small{position:absolute;left:10px;bottom:9px;font-size:10px;font-weight:900;opacity:.68;text-transform:uppercase}
+.tile-text{font-size:12px;font-weight:900;line-height:1.25;letter-spacing:.5px;text-transform:uppercase}
 .empty{background:#070707;opacity:.18;cursor:default}.empty::after{content:""}
 </style>
 </head>
+
 <body>
 <div class="app">
   <div class="topbar">
-    <div><div class="brand">north star</div><div class="label" id="viewLabel"></div></div>
+    <div>
+      <div class="brand">north star</div>
+      <div class="label" id="viewLabel"></div>
+    </div>
     <div class="meta" id="lifeMeta"></div>
   </div>
 
   <div class="nav">
-    <button onclick="showYears()">Years</button>
-    <button onclick="showMonths()">Months</button>
-    <button onclick="showWeeks()">Weeks</button>
-    <button onclick="showDays()">Days</button>
+    <button onclick="render('years')">Years</button>
+    <button onclick="render('months')">Months</button>
+    <button onclick="render('weeks')">Weeks</button>
+    <button onclick="render('days')">Days</button>
     <button onclick="goBack()">Back</button>
     <div class="view-title" id="currentView"></div>
   </div>
 
-  <div class="grid-wrap"><div id="grid" class="grid"></div></div>
+  <div class="grid-wrap" id="gridWrap">
+    <div id="grid" class="grid"></div>
+  </div>
 </div>
 
 <script>
+const APP_VERSION = "0.3.1";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);
 const MS_DAY = 86400000;
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
-let stack=[];
+let historyStack = [];
+let currentRender = {mode:"years", data:null};
 
 function sod(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
 function dayNum(d){return Math.floor((sod(d)-sod(BIRTH))/MS_DAY)+1}
 function ageYears(d=new Date()){return (d-BIRTH)/(MS_DAY*365.2425)}
-function weekNum(d){return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))}
-function monthNum(y,m){return (y-BIRTH.getFullYear())*12+m}
+function yearNum(y){return y-BIRTH.getFullYear()}
+function monthNum(y,m){return (y-BIRTH.getFullYear())*12+m+1}
+function weekNumFromStart(d){return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))+1}
+function clampDate(d){if(d<BIRTH)return new Date(BIRTH); if(d>=END)return new Date(END); return d}
 
 function meta(){
-  const now = new Date();
-  const days = dayNum(now);
-  const total = Math.floor(365.2425 * HORIZON_YEARS);
-
-  lifeMeta.innerHTML = `
-    DAY ${days.toLocaleString()}<br>
-    AGE ${ageYears(now).toFixed(2)}<br>
-    ${((days/total)*100).toFixed(2)}% TO 110<br>
-    <span style="opacity:.55">VER ${APP_VERSION}</span>
-  `;
+  const now=new Date(), days=dayNum(now), total=Math.floor(365.2425*HORIZON_YEARS);
+  lifeMeta.innerHTML=`DAY ${days.toLocaleString()}<br>AGE ${ageYears(now).toFixed(2)}<br>${((days/total)*100).toFixed(2)}% TO 110<br><span style="opacity:.55">VER ${APP_VERSION}</span>`;
 }
 
-function gridCols(n){grid.style.gridTemplateColumns=`repeat(${n},1fr)`}
-function clear(){grid.innerHTML=""}
-function state(label,title,cols){viewLabel.innerText=label;currentView.innerText=title;gridCols(cols);clear()}
+function setState(label,title,cols){
+  viewLabel.innerText=label;
+  currentView.innerText=title;
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  grid.innerHTML="";
+  gridWrap.scrollTop=0;
+}
+
 function clsForDate(d){
   const now=sod(new Date());
   if(+sod(d)===+now)return"current";
   if(d<now)return"past";
   return"future";
 }
-function tile(title,sub,small,cls,onClick){
+
+function tile(lines,cls,onClick,id){
   const t=document.createElement("div");
   t.className="tile "+(cls||"");
-  t.innerHTML=`<div class="tile-title">${title}</div><div class="tile-sub">${sub||""}</div><div class="tile-small">${small||""}</div>`;
+  if(id)t.id=id;
+  t.innerHTML=`<div class="tile-text">${lines.join("<br>")}</div>`;
   if(onClick)t.onclick=onClick;
   grid.appendChild(t);
 }
 
-function showYears(push=true){
-  if(push)stack.push(showYears);
-  state("Lifetime Grid","1987 — 2097",8);
+function scrollToCurrent(){
+  setTimeout(()=>{
+    const cur=document.getElementById("currentTile");
+    if(cur) gridWrap.scrollTop = Math.max(0, cur.offsetTop - 8);
+  },50);
+}
+
+function render(mode,data=null,push=true){
+  if(push) historyStack.push({...currentRender});
+  currentRender={mode,data};
+
+  if(mode==="years") renderYears();
+  if(mode==="months") renderMonths();
+  if(mode==="weeks") renderWeeks();
+  if(mode==="days") renderDays();
+  if(mode==="yearMonths") renderYearMonths(data.year);
+  if(mode==="monthWeeks") renderMonthWeeks(data.year,data.month);
+  if(mode==="weekDays") renderWeekDays(data.start);
+}
+
+function renderYears(){
+  setState("Lifetime Grid","1987 — 2097",8);
   const nowY=new Date().getFullYear();
+
   for(let y=1987;y<=2097;y++){
     const cls=y===nowY?"current":y<nowY?"past":"future";
-    tile(y,`Y /// ${y-1987}`,y===nowY?"CURRENT YEAR":"",cls,()=>showYearMonths(y));
+    tile(
+      [`${y}`,`Y /// ${yearNum(y)}`,y===nowY?"CURRENT YEAR":""],
+      cls,
+      ()=>render("yearMonths",{year:y}),
+      y===nowY?"currentTile":null
+    );
   }
+  scrollToCurrent();
 }
 
-function showYearMonths(y,push=true){
-  if(push)stack.push(()=>showYearMonths(y,false));
-  state("Year Grid",`${y} / Y /// ${y-1987}`,4);
+function renderYearMonths(y){
+  setState("Year Grid",`${y} / Y /// ${yearNum(y)}`,4);
   const now=new Date();
+
   for(let m=0;m<12;m++){
     const d=new Date(y,m,1);
-    tile(MONTHS[m],`M /// ${monthNum(y,m)}`,`DAY ${dayNum(d).toLocaleString()}`,clsForDate(d),()=>showMonthWeeks(y,m));
+    const isCurrent=y===now.getFullYear() && m===now.getMonth();
+    tile(
+      [`${MONTHS[m]} ${y}`,`M /// ${monthNum(y,m)}`,`D /// ${dayNum(d)}`],
+      clsForDate(d),
+      ()=>render("monthWeeks",{year:y,month:m}),
+      isCurrent?"currentTile":null
+    );
   }
+  scrollToCurrent();
 }
 
-function showMonths(push=true){
-  if(push)stack.push(showMonths);
-  state("Continuous Month Grid","M /// 0 — M /// 1320",6);
+function renderMonths(){
+  setState("Continuous Month Grid","M /// 1 — M /// 1320",6);
+  const now=new Date();
+
   for(let y=1987;y<=2097;y++){
     for(let m=0;m<12;m++){
       const d=new Date(y,m,1);
       if(d>=END)break;
-      tile(`${MONTHS[m]} ${y}`,`M /// ${monthNum(y,m)}`,`DAY ${dayNum(d).toLocaleString()}`,clsForDate(d),()=>showMonthWeeks(y,m));
+      const isCurrent=y===now.getFullYear() && m===now.getMonth();
+      tile(
+        [`${MONTHS[m]} ${y}`,`M /// ${monthNum(y,m)}`,`D /// ${dayNum(d)}`],
+        clsForDate(d),
+        ()=>render("monthWeeks",{year:y,month:m}),
+        isCurrent?"currentTile":null
+      );
     }
   }
+  scrollToCurrent();
 }
 
-function showMonthWeeks(y,m,push=true){
-  if(push)stack.push(()=>showMonthWeeks(y,m,false));
-  state("Month → Weeks",`${MONTHS[m]} ${y}`,4);
-  const first=new Date(y,m,1), last=new Date(y,m+1,0);
-  let start=new Date(first); start.setDate(first.getDate()-first.getDay());
+function renderMonthWeeks(y,m){
+  setState("Month Grid",`${MONTHS[m]} ${y}`,4);
+  const now=sod(new Date());
+  const first=new Date(y,m,1);
+  const last=new Date(y,m+1,0);
+  let start=new Date(first);
+
   while(start<=last){
-    const end=new Date(start); end.setDate(start.getDate()+6);
+    const weekStart=new Date(start);
+    const weekEnd=addDays(weekStart,6);
+    const isCurrent=now>=weekStart && now<=weekEnd;
+
     tile(
-      `${MONTHS[start.getMonth()]} ${start.getDate()} — ${MONTHS[end.getMonth()]} ${end.getDate()}`,
-      `W /// ${weekNum(start)}`,
-      `DAY ${dayNum(start).toLocaleString()}`,
-      clsForDate(start),
-      ()=>showWeekDays(new Date(start))
+      [`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} — ${MONTHS[weekEnd.getMonth()]} ${weekEnd.getDate()}`,`W /// ${weekNumFromStart(weekStart)}`,`D /// ${dayNum(weekStart)}`],
+      clsForDate(weekStart),
+      ()=>render("weekDays",{start:weekStart}),
+      isCurrent?"currentTile":null
     );
-    start.setDate(start.getDate()+7);
+    start=addDays(start,7);
   }
+  scrollToCurrent();
 }
 
-function showWeeks(push=true){
-  if(push)stack.push(showWeeks);
-  state("Continuous Week Grid","W /// 0 — END",6);
-  let start=sod(BIRTH);
-  start.setDate(start.getDate()-start.getDay());
+function renderWeeks(){
+  setState("Continuous Week Grid","W /// 1 — END",6);
+  const now=sod(new Date());
+  let start=new Date(BIRTH);
+
   while(start<END){
-    const end=new Date(start); end.setDate(start.getDate()+6);
-    tile(`${MONTHS[start.getMonth()]} ${start.getDate()} — ${MONTHS[end.getMonth()]} ${end.getDate()}`,`W /// ${weekNum(start)}`,`DAY ${dayNum(start).toLocaleString()}`,clsForDate(start),()=>showWeekDays(new Date(start)));
-    start.setDate(start.getDate()+7);
+    const weekStart=new Date(start);
+    const weekEnd=addDays(weekStart,6);
+    const isCurrent=now>=weekStart && now<=weekEnd;
+
+    tile(
+      [`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} ${weekStart.getFullYear()}`,`W /// ${weekNumFromStart(weekStart)}`,`D /// ${dayNum(weekStart)}`],
+      clsForDate(weekStart),
+      ()=>render("weekDays",{start:weekStart}),
+      isCurrent?"currentTile":null
+    );
+    start=addDays(start,7);
   }
+  scrollToCurrent();
 }
 
-function showWeekDays(start,push=true){
-  if(push)stack.push(()=>showWeekDays(start,false));
-  const end=new Date(start); end.setDate(start.getDate()+6);
-  state("Week Grid",`${MONTHS[start.getMonth()]} ${start.getDate()} — ${MONTHS[end.getMonth()]} ${end.getDate()}`,7);
+function renderWeekDays(start){
+  const weekStart=sod(start);
+  const weekEnd=addDays(weekStart,6);
+  setState("Week Grid",`${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} — ${MONTHS[weekEnd.getMonth()]} ${weekEnd.getDate()}`,7);
+
   for(let i=0;i<7;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i);
-    tile(`${MONTHS[d.getMonth()]} ${d.getDate()}`,`D /// ${dayNum(d).toLocaleString()}`,d.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase(),clsForDate(d),()=>showDay(d));
+    const d=addDays(weekStart,i);
+    tile(
+      [`${MONTHS[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`,`D /// ${dayNum(d)}`,d.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()],
+      clsForDate(d),
+      ()=>alert(`${d.toDateString()}\nD /// ${dayNum(d)}\nW /// ${weekNumFromStart(d)}\nM /// ${monthNum(d.getFullYear(),d.getMonth())}\nY /// ${yearNum(d.getFullYear())}`),
+      +sod(d)===+sod(new Date())?"currentTile":null
+    );
   }
+  scrollToCurrent();
 }
 
-function showDays(push=true){
-  if(push)stack.push(showDays);
-  state("Continuous Day Grid","D /// 1 — END",7);
-  let d=sod(BIRTH);
-  while(d<END){
+function renderDays(){
+  setState("Daily Grid","CURRENT WINDOW",7);
+  const today=sod(new Date());
+  const start=addDays(today,-180);
+  const end=addDays(today,365);
+
+  let d=clampDate(start);
+  while(d<end && d<END){
     const cur=new Date(d);
-    tile(`${MONTHS[cur.getMonth()]} ${cur.getDate()}`,`D /// ${dayNum(cur).toLocaleString()}`,cur.getFullYear(),clsForDate(cur),()=>showDay(cur));
-    d.setDate(d.getDate()+1);
+    tile(
+      [`${MONTHS[cur.getMonth()]} ${cur.getDate()} ${cur.getFullYear()}`,`D /// ${dayNum(cur)}`,cur.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()],
+      clsForDate(cur),
+      ()=>alert(`${cur.toDateString()}\nD /// ${dayNum(cur)}\nW /// ${weekNumFromStart(cur)}\nM /// ${monthNum(cur.getFullYear(),cur.getMonth())}\nY /// ${yearNum(cur.getFullYear())}`),
+      +sod(cur)===+today?"currentTile":null
+    );
+    d=addDays(d,1);
   }
-}
-
-function showDay(d){
-  alert(`${d.toDateString()}\nDay ${dayNum(d).toLocaleString()}\nWeek ${weekNum(d)}\nMonth ${monthNum(d.getFullYear(),d.getMonth())}\nYear ${d.getFullYear()-1987}`);
+  scrollToCurrent();
 }
 
 function goBack(){
-  stack.pop();
-  const last=stack.pop();
-  if(last)last(false); else showYears(false);
+  const last=historyStack.pop();
+  if(!last){render("years",null,false);return}
+  render(last.mode,last.data,false);
 }
 
 meta();
-showYears(false);
+render("years",null,false);
 </script>
 </body>
 </html>

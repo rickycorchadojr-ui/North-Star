@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.3.5 -->
+<!-- NORTH STAR v0.3.6 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -104,11 +104,24 @@ body{
   opacity:.62;
 }
 
+.nav-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
 .nav{
   display:flex;
   gap:10px;
   align-items:center;
   flex-wrap:wrap;
+}
+
+.view-title{
+  text-align:right;
+  margin-left:auto;
+  white-space:nowrap;
 }
 
 button{
@@ -231,12 +244,14 @@ button:hover{
     <div class="meta" id="lifeMeta"></div>
   </div>
 
-  <div class="nav">
-    <button onclick="render('years')">Years</button>
-    <button onclick="render('months')">Months</button>
-    <button onclick="render('weeks')">Weeks</button>
-    <button onclick="render('days')">Days</button>
-    <button onclick="goBack()">Back</button>
+  <div class="nav-row">
+    <div class="nav">
+      <button onclick="render('years')">Years</button>
+      <button onclick="render('months')">Months</button>
+      <button onclick="render('weeks')">Weeks</button>
+      <button onclick="render('days')">Days</button>
+      <button onclick="goBack()">Back</button>
+    </div>
     <div class="view-title" id="currentView"></div>
   </div>
 
@@ -247,7 +262,7 @@ button:hover{
 </div>
 
 <script>
-const APP_VERSION = "0.3.5";
+const APP_VERSION = "0.3.6";
 const BIRTH = new Date(1987,5,26);
 const HORIZON_YEARS = 110;
 const END = new Date(2097,5,26);

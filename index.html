@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.6 -->
+<!-- NORTH STAR v0.6.8 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -33,7 +33,6 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .tile{position:relative;aspect-ratio:1/1;min-height:auto;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer;background-size:cover;background-position:center;background-repeat:no-repeat}
 .tile:nth-child(even){background-color:#111418}
 .tile.has-image .tile-text{text-shadow:0 1px 3px #000,0 0 8px #000}
-.tile.has-image .photo-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;background:#eee;z-index:60}
 .tile.current{outline:4px solid #eee;outline-offset:-4px;background-color:#20242b;z-index:4}
 .tile.future{opacity:.38}.tile.past{opacity:.82}
 .tile::before,.tile::after{content:"";position:absolute;background:#eee;z-index:50;pointer-events:none;opacity:1}
@@ -91,7 +90,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.6";
+const APP_VERSION="0.6.8";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -145,8 +144,8 @@ function findFirstImageInRange(start,end){
 function getWeekImage(start){return findFirstImageInRange(start,addDays(start,6))}
 function getMonthImage(y,m){return findFirstImageInRange(new Date(y,m,1),new Date(y,m+1,0))}
 function getYearImage(y){return findFirstImageInRange(new Date(y,0,1),new Date(y,11,31))}
-
 function imageFileNameFromUrl(url){if(!url)return "";return url.split("/img/")[1]||""}
+
 function uniqueImageFileName(d,file){
   let ext="jpg";
   if(file.type&&file.type.includes("png"))ext="png";
@@ -212,16 +211,9 @@ function meta(){
 function updateMeter(mode){
   const now=new Date();
   let total=111,current=yearNum(now.getFullYear())+1,label=`CURRENT YEAR: ${yearNum(now.getFullYear())}`,sub="";
-
-  if(mode==="months"||mode==="yearMonths"||mode==="monthWeeks"){
-    total=12;current=now.getMonth()+1;label=`CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;sub=`MONTH ${current} OF 12`;
-  }
-  if(mode==="weeks"||mode==="weekDays"){
-    total=weeksInCurrentYear();current=calendarWeekOfYear(now);label=`CURRENT WEEK: ${calendarWeekIndex(now)}`;sub=`WEEK ${current} OF ${total}`;
-  }
-  if(mode==="days"){
-    total=daysInYear(now.getFullYear());current=dayOfYear(now);label=`CURRENT DAY: ${dayNum(now)}`;sub=`DAYS LEFT: ${daysLeftInYear()}`;
-  }
+  if(mode==="months"||mode==="yearMonths"||mode==="monthWeeks"){total=12;current=now.getMonth()+1;label=`CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;sub=`MONTH ${current} OF 12`}
+  if(mode==="weeks"||mode==="weekDays"){total=weeksInCurrentYear();current=calendarWeekOfYear(now);label=`CURRENT WEEK: ${calendarWeekIndex(now)}`;sub=`WEEK ${current} OF ${total}`}
+  if(mode==="days"){total=daysInYear(now.getFullYear());current=dayOfYear(now);label=`CURRENT DAY: ${dayNum(now)}`;sub=`DAYS LEFT: ${daysLeftInYear()}`}
   if(mode==="years"){sub=`YEAR ${yearNum(now.getFullYear())} OF 110`}
 
   meterLabel.innerText=label;
@@ -263,8 +255,7 @@ function tile(lines,cls,onClick,id,image=""){
   t.className="tile "+(cls||"");
   if(id)t.id=id;
   if(image)t.style.backgroundImage=`url("${image}")`;
-  const marker=image?'<div class="photo-dot"></div>':'';
-  t.innerHTML=`<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>${marker}`;
+  t.innerHTML=`<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>`;
   if(onClick)t.onclick=onClick;
   grid.appendChild(t);
 }
@@ -277,6 +268,7 @@ function scrollToCurrent(){
 }
 
 function render(mode,data=null,push=true){
+  closePanel();
   if(push)historyStack.push({...currentRender});
   currentRender={mode,data};
   if(mode==="years")renderYears();
@@ -332,7 +324,6 @@ function renderMonthWeeks(y,m){
   const first=new Date(y,m,1);
   const last=new Date(y,m+1,0);
   let start=calendarWeekStart(first);
-
   while(start<=last){
     const weekStart=new Date(start);
     const img=getWeekImage(weekStart);
@@ -347,7 +338,6 @@ function renderWeeks(){
   setState("Continuous Week Grid",`W /// 1 — W /// ${totalWeeks()}`,4);
   const now=sod(new Date());
   let start=calendarWeekStart(BIRTH);
-
   while(start<END){
     const weekStart=new Date(start);
     const img=getWeekImage(weekStart);
@@ -361,11 +351,10 @@ function renderWeeks(){
 function renderWeekDays(start){
   const weekStart=calendarWeekStart(start);
   setState("Week Grid",formatWeekRange(weekStart),7);
-
   for(let i=0;i<7;i++){
     const d=addDays(weekStart,i);
     const img=getImageUrl(d);
-    tile([formatMonthDay(d),`D /// ${dayNum(d)}`,`LW /// ${lifeWeekNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img);
+    tile([formatMonthDay(d),`D /// ${dayNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img);
   }
   scrollToCurrent();
 }
@@ -376,11 +365,10 @@ function renderDays(){
   const start=addDays(today,-180);
   const end=addDays(today,365);
   let d=clampDate(start);
-
   while(d<end&&d<END){
     const cur=new Date(d);
     const img=getImageUrl(cur);
-    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`,`LW /// ${lifeWeekNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img);
+    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img);
     d=addDays(d,1);
   }
   scrollToCurrent();

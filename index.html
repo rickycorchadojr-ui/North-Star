@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.9 -->
+<!-- NORTH STAR v0.7.0 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -50,6 +50,7 @@ textarea,input{width:100%;background:#050505;color:#eee;border:1px solid rgba(25
 textarea{height:100px;resize:none}
 .field-label{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55;margin-top:10px;margin-bottom:4px}
 .photo-name{margin-top:8px;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;word-break:break-all}
+.sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
@@ -85,12 +86,22 @@ textarea{height:100px;resize:none}
 <div class="panel" id="dayPanel">
   <div class="panel-title" id="panelTitle"></div>
   <div class="panel-meta" id="panelMeta"></div>
+
   <div class="field-label">Photo</div>
   <input id="photoPicker" type="file" accept="image/*" style="display:none">
   <button onclick="choosePhoto()">Choose Photo</button>
   <div class="photo-name" id="photoName">NO PHOTO SELECTED</div>
+
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
+
+  <div class="field-label">Sleep</div>
+  <div class="sleep-row">
+    <input id="sleepHours" type="number" min="0" max="24" placeholder="HRS">
+    <input id="sleepMinutes" type="number" min="0" max="59" placeholder="MIN">
+    <input id="sleepScore" type="number" min="1" max="10" placeholder="1-10">
+  </div>
+
   <div class="panel-actions">
     <button onclick="uploadPhoto()">Upload Photo</button>
     <button onclick="clearImageUrl()">Clear Image</button>
@@ -99,7 +110,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.9";
+const APP_VERSION="0.7.0";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -397,12 +408,26 @@ function openDay(d){
   panelTitle.innerText=`${formatMonthDay(selectedDay)} / D /// ${dayNum(selectedDay)}`;
   panelMeta.innerHTML=`W /// ${calendarWeekIndex(selectedDay)}<br>LW /// ${lifeWeekNum(selectedDay)}<br>M /// ${monthNum(selectedDay.getFullYear(),selectedDay.getMonth())}<br>Y /// ${yearNum(selectedDay.getFullYear())}`;
   dayNote.value=localStorage.getItem(dayKey(selectedDay)+"_note")||"";
+  sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
+  sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
+  sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
   dayPanel.classList.add("active");
 }
 
 dayNote.addEventListener("input",()=>{
   if(selectedDay)localStorage.setItem(dayKey(selectedDay)+"_note",dayNote.value);
 });
+
+function saveSleepMetric(){
+  if(!selectedDay)return;
+  localStorage.setItem(dayKey(selectedDay)+"_sleep_hours",sleepHours.value);
+  localStorage.setItem(dayKey(selectedDay)+"_sleep_minutes",sleepMinutes.value);
+  localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
+}
+
+sleepHours.addEventListener("input",saveSleepMetric);
+sleepMinutes.addEventListener("input",saveSleepMetric);
+sleepScore.addEventListener("input",saveSleepMetric);
 
 function choosePhoto(){photoPicker.click()}
 

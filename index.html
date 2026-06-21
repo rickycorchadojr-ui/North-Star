@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.6 -->
+<!-- NORTH STAR v0.8.7 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -122,6 +122,20 @@ textarea{height:100px;resize:none}
 .sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .state-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .activity-row{display:grid;grid-template-columns:1.4fr .7fr .9fr;gap:8px}
+.preset-row{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+
+.preset-button{
+  padding:5px 8px;
+  font-size:9px;
+  letter-spacing:.8px;
+  opacity:.86;
+}
+
 .activity-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .activity-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:#050505;border:1px solid rgba(255,255,255,.16);padding:7px 8px}
 .activity-name{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
@@ -198,7 +212,16 @@ textarea{height:100px;resize:none}
   </div>
 
   <div class="field-label">Activities</div>
-  <div class="activity-row">
+
+<div class="preset-row">
+  <button class="preset-button" onclick="addPresetActivity('Bible',5,'health')">Bible 5</button>
+  <button class="preset-button" onclick="addPresetActivity('Premarket',20,'work')">Premarket 20</button>
+  <button class="preset-button" onclick="addPresetActivity('Trade',30,'work')">Trade 30</button>
+  <button class="preset-button" onclick="addPresetActivity('Walk',20,'health')">Walk 20</button>
+  <button class="preset-button" onclick="addPresetActivity('Journal',15,'work')">Journal 15</button>
+</div>
+
+<div class="activity-row">
     <input id="activityName" type="text" placeholder="NAME">
     <input id="activityMinutes" type="number" min="1" max="1440" placeholder="MIN">
     <select id="activityCategory">
@@ -225,7 +248,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.6";
+const APP_VERSION="0.8.7";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -707,6 +730,22 @@ function renderActivityList(){
   });
 }
 
+function addPresetActivity(name,minutes,category){
+  if(!selectedDay)return;
+
+  const activities=getActivities();
+  activities.push({
+    id:String(Date.now())+"-"+Math.random().toString(16).slice(2),
+    name,
+    minutes,
+    category
+  });
+
+  saveActivities(activities);
+  renderActivityList();
+  renderTotals();
+}
+
 function addActivity(){
   if(!selectedDay)return;
 
@@ -719,7 +758,7 @@ function addActivity(){
 
   const activities=getActivities();
   activities.push({
-    id:String(Date.now()),
+    id:String(Date.now())+"-"+Math.random().toString(16).slice(2),
     name,
     minutes,
     category

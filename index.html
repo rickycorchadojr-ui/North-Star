@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.0 -->
+<!-- NORTH STAR v0.8.1 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -46,12 +46,17 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .panel.active{display:block}
 .panel-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
 .panel-meta{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;line-height:1.45;margin-bottom:10px}
-textarea,input{width:100%;background:#050505;color:#eee;border:1px solid rgba(255,255,255,.25);padding:10px;font-size:12px;font-weight:800;outline:none}
+textarea,input,select{width:100%;background:#050505;color:#eee;border:1px solid rgba(255,255,255,.25);padding:10px;font-size:12px;font-weight:800;outline:none}
 textarea{height:100px;resize:none}
 .field-label{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55;margin-top:10px;margin-bottom:4px}
 .photo-name{margin-top:8px;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;word-break:break-all}
 .sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.allocation-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.activity-row{display:grid;grid-template-columns:1.4fr .7fr .9fr;gap:8px}
+.activity-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.activity-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:#050505;border:1px solid rgba(255,255,255,.16);padding:7px 8px}
+.activity-name{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
+.activity-meta{font-size:9px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;white-space:nowrap}
+.activity-delete{padding:3px 7px;font-size:9px;border-radius:4px}
 .panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
@@ -103,12 +108,22 @@ textarea{height:100px;resize:none}
     <input id="sleepScore" type="number" min="1" max="10" placeholder="1-10">
   </div>
 
-  <div class="field-label">Time Allocation</div>
-  <div class="allocation-row">
-    <input id="healthMinutes" type="number" min="0" max="1440" placeholder="HEALTH">
-    <input id="lifeMinutes" type="number" min="0" max="1440" placeholder="LIFE">
-    <input id="workMinutes" type="number" min="0" max="1440" placeholder="WORK">
+  <div class="field-label">Activities</div>
+  <div class="activity-row">
+    <input id="activityName" type="text" placeholder="NAME">
+    <input id="activityMinutes" type="number" min="1" max="1440" placeholder="MIN">
+    <select id="activityCategory">
+      <option value="work">WORK</option>
+      <option value="life">LIFE</option>
+      <option value="health">HEALTH</option>
+    </select>
   </div>
+
+  <div class="panel-actions">
+    <button onclick="addActivity()">Add Activity</button>
+  </div>
+
+  <div class="activity-list" id="activityList"></div>
 
   <div class="panel-actions">
     <button onclick="uploadPhoto()">Upload Photo</button>
@@ -118,7 +133,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.0";
+const APP_VERSION="0.8.1";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -157,6 +172,7 @@ function weeksInCurrentYear(){return calendarWeekOfYear(new Date(new Date().getF
 function daysLeftInYear(){const now=sod(new Date());const last=new Date(now.getFullYear(),11,31);return Math.floor((sod(last)-now)/MS_DAY)}
 function dayKey(d){return `ns_day_${dayNum(d)}`}
 function getImageUrl(d){return localStorage.getItem(dayKey(d)+"_image")||""}
+function activitiesKey(d){return dayKey(d)+"_activities"}
 
 function findFirstImageInRange(start,end){
   let d=sod(start);
@@ -413,15 +429,16 @@ function openDay(d){
   selectedFile=null;
   photoPicker.value="";
   photoName.innerText="NO PHOTO SELECTED";
+  activityName.value="";
+  activityMinutes.value="";
+  activityCategory.value="work";
   panelTitle.innerText=`${formatMonthDay(selectedDay)} / D /// ${dayNum(selectedDay)}`;
   panelMeta.innerHTML=`W /// ${calendarWeekIndex(selectedDay)}<br>LW /// ${lifeWeekNum(selectedDay)}<br>M /// ${monthNum(selectedDay.getFullYear(),selectedDay.getMonth())}<br>Y /// ${yearNum(selectedDay.getFullYear())}`;
   dayNote.value=localStorage.getItem(dayKey(selectedDay)+"_note")||"";
   sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
-  healthMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_health_minutes")||"";
-  lifeMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_life_minutes")||"";
-  workMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_work_minutes")||"";
+  renderActivityList();
   dayPanel.classList.add("active");
 }
 
@@ -436,19 +453,89 @@ function saveSleepMetric(){
   localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
 }
 
-function saveAllocationMetric(){
-  if(!selectedDay)return;
-  localStorage.setItem(dayKey(selectedDay)+"_health_minutes",healthMinutes.value);
-  localStorage.setItem(dayKey(selectedDay)+"_life_minutes",lifeMinutes.value);
-  localStorage.setItem(dayKey(selectedDay)+"_work_minutes",workMinutes.value);
-}
-
 sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
-healthMinutes.addEventListener("input",saveAllocationMetric);
-lifeMinutes.addEventListener("input",saveAllocationMetric);
-workMinutes.addEventListener("input",saveAllocationMetric);
+
+function getActivities(){
+  if(!selectedDay)return [];
+  try{
+    return JSON.parse(localStorage.getItem(activitiesKey(selectedDay))||"[]");
+  }catch(e){
+    return [];
+  }
+}
+
+function saveActivities(activities){
+  if(!selectedDay)return;
+  localStorage.setItem(activitiesKey(selectedDay),JSON.stringify(activities));
+}
+
+function formatActivityCategory(category){
+  if(category==="work")return "WORK";
+  if(category==="life")return "LIFE";
+  if(category==="health")return "HEALTH";
+  return "UNKNOWN";
+}
+
+function renderActivityList(){
+  if(!selectedDay)return;
+  const activities=getActivities();
+  activityList.innerHTML="";
+
+  if(!activities.length){
+    const empty=document.createElement("div");
+    empty.className="activity-meta";
+    empty.innerText="NO ACTIVITIES LOGGED";
+    activityList.appendChild(empty);
+    return;
+  }
+
+  activities.forEach(activity=>{
+    const item=document.createElement("div");
+    item.className="activity-item";
+    item.innerHTML=`
+      <div class="activity-name">${activity.name}</div>
+      <div class="activity-meta">${formatActivityCategory(activity.category)} / ${activity.minutes}M</div>
+      <button class="activity-delete" onclick="deleteActivity('${activity.id}')">X</button>
+    `;
+    activityList.appendChild(item);
+  });
+}
+
+function addActivity(){
+  if(!selectedDay)return;
+
+  const name=activityName.value.trim();
+  const minutes=parseInt(activityMinutes.value,10);
+  const category=activityCategory.value;
+
+  if(!name){alert("ENTER ACTIVITY NAME");return}
+  if(!minutes||minutes<1){alert("ENTER MINUTES");return}
+
+  const activities=getActivities();
+  activities.push({
+    id:String(Date.now()),
+    name,
+    minutes,
+    category
+  });
+
+  saveActivities(activities);
+
+  activityName.value="";
+  activityMinutes.value="";
+  activityCategory.value="work";
+
+  renderActivityList();
+}
+
+function deleteActivity(id){
+  if(!selectedDay)return;
+  const activities=getActivities().filter(activity=>activity.id!==id);
+  saveActivities(activities);
+  renderActivityList();
+}
 
 function choosePhoto(){photoPicker.click()}
 

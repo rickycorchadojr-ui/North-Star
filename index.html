@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.7.0 -->
+<!-- NORTH STAR v0.8.0 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -51,6 +51,7 @@ textarea{height:100px;resize:none}
 .field-label{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55;margin-top:10px;margin-bottom:4px}
 .photo-name{margin-top:8px;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;word-break:break-all}
 .sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.allocation-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
@@ -102,6 +103,13 @@ textarea{height:100px;resize:none}
     <input id="sleepScore" type="number" min="1" max="10" placeholder="1-10">
   </div>
 
+  <div class="field-label">Time Allocation</div>
+  <div class="allocation-row">
+    <input id="healthMinutes" type="number" min="0" max="1440" placeholder="HEALTH">
+    <input id="lifeMinutes" type="number" min="0" max="1440" placeholder="LIFE">
+    <input id="workMinutes" type="number" min="0" max="1440" placeholder="WORK">
+  </div>
+
   <div class="panel-actions">
     <button onclick="uploadPhoto()">Upload Photo</button>
     <button onclick="clearImageUrl()">Clear Image</button>
@@ -110,7 +118,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.7.0";
+const APP_VERSION="0.8.0";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -411,6 +419,9 @@ function openDay(d){
   sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
+  healthMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_health_minutes")||"";
+  lifeMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_life_minutes")||"";
+  workMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_work_minutes")||"";
   dayPanel.classList.add("active");
 }
 
@@ -425,9 +436,19 @@ function saveSleepMetric(){
   localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
 }
 
+function saveAllocationMetric(){
+  if(!selectedDay)return;
+  localStorage.setItem(dayKey(selectedDay)+"_health_minutes",healthMinutes.value);
+  localStorage.setItem(dayKey(selectedDay)+"_life_minutes",lifeMinutes.value);
+  localStorage.setItem(dayKey(selectedDay)+"_work_minutes",workMinutes.value);
+}
+
 sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
+healthMinutes.addEventListener("input",saveAllocationMetric);
+lifeMinutes.addEventListener("input",saveAllocationMetric);
+workMinutes.addEventListener("input",saveAllocationMetric);
 
 function choosePhoto(){photoPicker.click()}
 

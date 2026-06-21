@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.8 -->
+<!-- NORTH STAR v0.6.9 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,6 +66,9 @@ textarea{height:100px;resize:none}
       <button onclick="showRoot('months')">Months</button>
       <button onclick="showRoot('years')">Years</button>
       <button onclick="goBack()">Back</button>
+      <button onclick="exportSave()">Export Save</button>
+      <button onclick="importSave()">Import Save</button>
+      <input id="saveImporter" type="file" accept=".json,application/json" style="display:none">
     </div>
     <div class="view-title" id="currentView"></div>
   </div>
@@ -90,7 +93,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.8";
+const APP_VERSION="0.6.9";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -443,6 +446,80 @@ async function clearImageUrl(){
 }
 
 function closePanel(){dayPanel.classList.remove("active")}
+
+function northStarStorageSnapshot(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith("ns_day_")){
+      data[key]=localStorage.getItem(key);
+    }
+    if(key===UPLOAD_KEY_STORAGE){
+      data[key]=localStorage.getItem(key);
+    }
+  }
+  return data;
+}
+
+function exportSave(){
+  const now=new Date();
+  const stamp=now.toISOString().slice(0,10);
+  const save={
+    app:"North Star",
+    version:APP_VERSION,
+    exportedAt:now.toISOString(),
+    localStorage:northStarStorageSnapshot()
+  };
+
+  const blob=new Blob([JSON.stringify(save,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+
+  a.href=url;
+  a.download=`north-star-save-v${APP_VERSION}-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+function importSave(){
+  saveImporter.click();
+}
+
+saveImporter.addEventListener("change",()=>{
+  const file=saveImporter.files[0];
+  if(!file)return;
+
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+    try{
+      const save=JSON.parse(reader.result);
+
+      if(!save||save.app!=="North Star"||!save.localStorage){
+        alert("INVALID NORTH STAR SAVE FILE");
+        return;
+      }
+
+      Object.keys(save.localStorage).forEach(key=>{
+        if(key.startsWith("ns_day_")||key===UPLOAD_KEY_STORAGE){
+          localStorage.setItem(key,save.localStorage[key]);
+        }
+      });
+
+      alert("SAVE LOADED");
+      render(currentRender.mode,currentRender.data,false);
+    }catch(e){
+      alert("SAVE IMPORT FAILED");
+    }
+
+    saveImporter.value="";
+  };
+
+  reader.readAsText(file);
+});
 
 function goBack(){
   const last=historyStack.pop();

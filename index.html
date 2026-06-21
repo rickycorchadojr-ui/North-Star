@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.8 -->
+<!-- NORTH STAR v0.8.9 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,7 +12,14 @@
 *{box-sizing:border-box}
 body{margin:0;width:100vw;height:100vh;background:#050505;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
 .app{height:100vh;padding:18px 22px;display:flex;flex-direction:column;gap:10px}
-.topbar{height:70px;display:grid;grid-template-columns:1fr 420px 1fr;align-items:flex-start;font-weight:800}
+.topbar{
+  height:92px;
+  flex:0 0 92px;
+  display:grid;
+  grid-template-columns:1fr 420px 1fr;
+  align-items:flex-start;
+  font-weight:800;
+}
 .brand{font-size:16px;text-transform:lowercase}
 .label,.meta,.view-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.75}
 .meta{text-align:right;line-height:1.35}
@@ -131,7 +138,7 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 
 .panel-tabs{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(3,1fr);
   gap:6px;
   margin-bottom:10px;
 }
@@ -226,7 +233,6 @@ textarea{height:100px;resize:none}
   <button class="panel-tab active" id="tabState" onclick="showPanelSection('state')">State</button>
   <button class="panel-tab" id="tabActivities" onclick="showPanelSection('activities')">Acts</button>
   <button class="panel-tab" id="tabPhoto" onclick="showPanelSection('photo')">Photo</button>
-  <button class="panel-tab" id="tabNote" onclick="showPanelSection('note')">Note</button>
 </div>
 
 <div class="panel-section" id="sectionPhoto">
@@ -239,11 +245,6 @@ textarea{height:100px;resize:none}
   <button onclick="uploadPhoto()">Upload Photo</button>
   <button onclick="clearImageUrl()">Clear Image</button>
 </div>
-</div>
-
-  <div class="panel-section" id="sectionNote">
-  <div class="field-label">Day Note</div>
-  <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
 </div>
 
     <div class="panel-section active" id="sectionState">
@@ -259,7 +260,11 @@ textarea{height:100px;resize:none}
     <input id="readinessScore" type="number" min="1" max="10" placeholder="READINESS">
     <input id="motivationScore" type="number" min="1" max="10" placeholder="MOTIVATION">
   </div>
+
+  <div class="field-label">Day Note</div>
+  <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
 </div>
+
 
   <div class="panel-section" id="sectionActivities">
   <div class="field-label">Activities</div>
@@ -298,7 +303,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.8";
+const APP_VERSION="0.8.9";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -597,7 +602,7 @@ function renderDays(){
 }
 
 function showPanelSection(section){
-  const sections=["state","activities","photo","note"];
+  const sections=["state","activities","photo"];
 
   sections.forEach(name=>{
     const sectionEl=document.getElementById("section"+name.charAt(0).toUpperCase()+name.slice(1));
@@ -796,18 +801,29 @@ function renderActivityList(){
 function addPresetActivity(name,minutes,category){
   if(!selectedDay)return;
 
-  const activities=getActivities();
-  activities.push({
-    id:String(Date.now())+"-"+Math.random().toString(16).slice(2),
-    name,
-    minutes,
-    category
-  });
+  let activities=getActivities();
+  const existing=activities.find(activity=>
+    activity.name===name &&
+    parseInt(activity.minutes,10)===minutes &&
+    activity.category===category
+  );
+
+  if(existing){
+    activities=activities.filter(activity=>activity.id!==existing.id);
+  }else{
+    activities.push({
+      id:String(Date.now())+"-"+Math.random().toString(16).slice(2),
+      name,
+      minutes,
+      category
+    });
+  }
 
   saveActivities(activities);
   renderActivityList();
   renderTotals();
 }
+
 
 function addActivity(){
   if(!selectedDay)return;

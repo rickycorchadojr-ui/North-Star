@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.5 -->
+<!-- NORTH STAR v0.8.6 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -32,6 +32,27 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .icon-button{width:34px;height:34px;padding:0;border-radius:50%;font-size:17px;letter-spacing:0;display:flex;align-items:center;justify-content:center;opacity:.72}
 .icon-button:hover{opacity:1}
 .grid-wrap{flex:1;overflow:auto;background:#08090a;scroll-behavior:auto}
+.weekday-header{
+  display:none;
+  grid-template-columns:repeat(7,1fr);
+  background:#050505;
+  border-left:2px solid rgba(255,255,255,.55);
+  border-right:2px solid rgba(255,255,255,.55);
+}
+
+.weekday-header.active{
+  display:grid;
+}
+
+.weekday-cell{
+  padding:5px 8px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  opacity:.65;
+  border-right:2px solid rgba(255,255,255,.35);
+}
 .grid{display:grid;align-content:start;min-height:100%;border-top:2px solid rgba(255,255,255,.55);border-left:2px solid rgba(255,255,255,.55)}
 .tile{position:relative;aspect-ratio:1/1;min-height:auto;border-right:2px solid rgba(255,255,255,.55);border-bottom:2px solid rgba(255,255,255,.55);background:#14171b;padding:7px 8px;overflow:visible;cursor:pointer;background-size:cover;background-position:center;background-repeat:no-repeat}
 .tile:nth-child(even){background-color:#111418}
@@ -139,7 +160,16 @@ textarea{height:100px;resize:none}
     <input id="saveImporter" type="file" accept=".json,application/json" style="display:none">
   </div>
 
-  <div class="grid-wrap" id="gridWrap"><div id="grid" class="grid"></div></div>
+  <div id="weekdayHeader" class="weekday-header">
+  <div class="weekday-cell">SUN</div>
+  <div class="weekday-cell">MON</div>
+  <div class="weekday-cell">TUE</div>
+  <div class="weekday-cell">WED</div>
+  <div class="weekday-cell">THU</div>
+  <div class="weekday-cell">FRI</div>
+  <div class="weekday-cell">SAT</div>
+</div>
+<div class="grid-wrap" id="gridWrap"><div id="grid" class="grid"></div></div>
 </div>
 
 <div class="panel" id="dayPanel">
@@ -195,7 +225,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.5";
+const APP_VERSION="0.8.6";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -347,6 +377,7 @@ function setState(label,title,cols){
   grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
   grid.innerHTML="";
   gridWrap.scrollTop=0;
+  weekdayHeader.classList.toggle("active",cols===7);
   updateMeter(currentRender.mode);
 }
 
@@ -478,8 +509,10 @@ function renderWeekDays(start){
 function renderDays(){
   setState("Daily Grid","CURRENT WINDOW",7);
   const today=sod(new Date());
-  const start=addDays(today,-180);
-  const end=addDays(today,365);
+  const windowStart=addDays(today,-180);
+  const start=calendarWeekStart(windowStart);
+  const end=addDays(calendarWeekStart(addDays(today,365)),7);
+
   let d=clampDate(start);
   while(d<end&&d<END){
     const cur=new Date(d);
@@ -610,24 +643,23 @@ function tileMetricsHtml(d){
   const readiness=getReadinessScoreForDate(d);
   const motivation=getMotivationScoreForDate(d);
 
-  return `
+    return `
     <div class="tile-metrics">
-      <div class="metric-grid">
-        <div class="metric-square metric-sleep">${percentOfDay(totals.sleep)}</div>
-        <div class="metric-square metric-health">${percentOfDay(totals.health)}</div>
-        <div class="metric-square metric-life">${percentOfDay(totals.life)}</div>
-        <div class="metric-square metric-work">${percentOfDay(totals.work)}</div>
-      </div>
       <div class="metric-grid">
         <div class="metric-square state-square">${scoreValue(sleepDec)}</div>
         <div class="metric-square state-square">${scoreValue(readiness)}</div>
         <div class="metric-square state-square">${scoreValue(motivation)}</div>
         <div class="metric-square state-square state-empty">-</div>
       </div>
+      <div class="metric-grid">
+        <div class="metric-square metric-sleep">${percentOfDay(totals.sleep)}</div>
+        <div class="metric-square metric-health">${percentOfDay(totals.health)}</div>
+        <div class="metric-square metric-life">${percentOfDay(totals.life)}</div>
+        <div class="metric-square metric-work">${percentOfDay(totals.work)}</div>
+      </div>
     </div>
   `;
 }
-
 
 function getActivities(){
   if(!selectedDay)return [];

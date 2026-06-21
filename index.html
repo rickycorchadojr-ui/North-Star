@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.9.0 -->
+<!-- NORTH STAR v0.9.1 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -255,11 +255,17 @@ textarea{height:100px;resize:none}
     <input id="sleepScore" type="number" min="1" max="10" placeholder="SLEEP 1-10">
   </div>
 
-  <div class="field-label">State</div>
-  <div class="state-row">
-    <input id="readinessScore" type="number" min="1" max="10" placeholder="READINESS">
-    <input id="motivationScore" type="number" min="1" max="10" placeholder="MOTIVATION">
-  </div>
+  <div class="field-label">Pillars</div>
+
+<div class="state-row">
+  <input id="healthScore" type="number" min="1" max="10" placeholder="HEALTH">
+  <input id="lifeScore" type="number" min="1" max="10" placeholder="LIFE">
+</div>
+
+<div class="state-row" style="margin-top:8px">
+  <input id="workScore" type="number" min="1" max="10" placeholder="WORK">
+  <input id="dayScore" type="text" placeholder="DAY SCORE" readonly>
+</div>
 
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
@@ -303,7 +309,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.9.0";
+const APP_VERSION="0.9.1";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -627,8 +633,10 @@ function openDay(d){
   sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
-  readinessScore.value=localStorage.getItem(dayKey(selectedDay)+"_readiness_score")||"";
-  motivationScore.value=localStorage.getItem(dayKey(selectedDay)+"_motivation_score")||"";
+  healthScore.value=localStorage.getItem(dayKey(selectedDay)+"_health_score")||"";
+  lifeScore.value=localStorage.getItem(dayKey(selectedDay)+"_life_score")||"";
+  workScore.value=localStorage.getItem(dayKey(selectedDay)+"_work_score")||"";
+  updateDayScore();
   renderActivityList();
   renderTotals();
   showPanelSection("state");
@@ -644,6 +652,7 @@ function saveSleepMetric(){
   localStorage.setItem(dayKey(selectedDay)+"_sleep_hours",sleepHours.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_minutes",sleepMinutes.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
+  updateDayScore();
   renderTotals();
 }
 
@@ -651,14 +660,36 @@ sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
 
-function saveStateMetrics(){
-  if(!selectedDay)return;
-  localStorage.setItem(dayKey(selectedDay)+"_readiness_score",readinessScore.value);
-  localStorage.setItem(dayKey(selectedDay)+"_motivation_score",motivationScore.value);
+function pillarAverage(){
+  const scores=[
+    parseInt(sleepScore.value,10),
+    parseInt(healthScore.value,10),
+    parseInt(lifeScore.value,10),
+    parseInt(workScore.value,10)
+  ].filter(score=>score>=1&&score<=10);
+
+  if(scores.length<4)return "";
+  const total=scores.reduce((sum,score)=>sum+score,0);
+  return (total/scores.length).toFixed(1);
 }
 
-readinessScore.addEventListener("input",saveStateMetrics);
-motivationScore.addEventListener("input",saveStateMetrics);
+function updateDayScore(){
+  dayScore.value=pillarAverage();
+}
+
+function saveStateMetrics(){
+  if(!selectedDay)return;
+
+  localStorage.setItem(dayKey(selectedDay)+"_health_score",healthScore.value);
+  localStorage.setItem(dayKey(selectedDay)+"_life_score",lifeScore.value);
+  localStorage.setItem(dayKey(selectedDay)+"_work_score",workScore.value);
+
+  updateDayScore();
+}
+
+healthScore.addEventListener("input",saveStateMetrics);
+lifeScore.addEventListener("input",saveStateMetrics);
+workScore.addEventListener("input",saveStateMetrics);
 
 function getActivitiesForDate(d){
   try{
@@ -714,12 +745,29 @@ function getSleepScoreForDate(d){
   return localStorage.getItem(dayKey(d)+"_sleep_score")||"";
 }
 
-function getReadinessScoreForDate(d){
-  return localStorage.getItem(dayKey(d)+"_readiness_score")||"";
+function getHealthScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_health_score")||"";
 }
 
-function getMotivationScoreForDate(d){
-  return localStorage.getItem(dayKey(d)+"_motivation_score")||"";
+function getLifeScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_life_score")||"";
+}
+
+function getWorkScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_work_score")||"";
+}
+
+function dayScoreForDate(d){
+  const scores=[
+    parseInt(getSleepScoreForDate(d),10),
+    parseInt(getHealthScoreForDate(d),10),
+    parseInt(getLifeScoreForDate(d),10),
+    parseInt(getWorkScoreForDate(d),10)
+  ].filter(score=>score>=1&&score<=10);
+
+  if(scores.length<4)return "";
+  const total=scores.reduce((sum,score)=>sum+score,0);
+  return (total/scores.length).toFixed(1);
 }
 
 function scoreValue(value){
@@ -727,20 +775,22 @@ function scoreValue(value){
 }
 
 function tileMetricsHtml(d){
-  if(!hasDayMetricData(d))return "";
-
   const totals=calculateTotalsForDate(d);
-  const sleepDec=sleepDecimalForDate(d);
-  const readiness=getReadinessScoreForDate(d);
-  const motivation=getMotivationScoreForDate(d);
+  const dayScore=dayScoreForDate(d);
+  const sleepScore=getSleepScoreForDate(d);
+  const healthScore=getHealthScoreForDate(d);
+  const lifeScore=getLifeScoreForDate(d);
+  const workScore=getWorkScoreForDate(d);
 
-    return `
+  if(!totals.tracked&&!dayScore&&!sleepScore&&!healthScore&&!lifeScore&&!workScore)return "";
+
+  return `
     <div class="tile-metrics">
       <div class="metric-grid">
-        <div class="metric-square state-square state-empty">-</div>
-        <div class="metric-square state-square">${scoreValue(sleepDec)}</div>
-        <div class="metric-square state-square">${scoreValue(readiness)}</div>
-        <div class="metric-square state-square">${scoreValue(motivation)}</div>
+        <div class="metric-square state-square">${scoreValue(lifeScore)}</div>
+        <div class="metric-square state-square">${scoreValue(sleepScore)}</div>
+        <div class="metric-square state-square">${scoreValue(healthScore)}</div>
+        <div class="metric-square state-square">${scoreValue(workScore)}</div>
       </div>
       <div class="metric-grid">
         <div class="metric-square metric-sleep">${percentOfDay(totals.sleep)}</div>

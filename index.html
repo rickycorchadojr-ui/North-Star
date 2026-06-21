@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.6.5 -->
+<!-- NORTH STAR v0.6.6 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,8 +40,6 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .tile::before{width:10px;height:2px;right:-6px;bottom:-2px}
 .tile::after{width:2px;height:10px;right:-2px;bottom:-6px}
 .tile-text{position:relative;z-index:70;font-size:10px;font-weight:900;line-height:1.08;letter-spacing:.45px;text-transform:uppercase}
-.empty{background:#070707;opacity:.18;cursor:default}
-.empty::before,.empty::after{content:none}
 .panel{position:fixed;right:22px;bottom:22px;width:380px;background:#090a0c;border:2px solid rgba(255,255,255,.55);padding:14px;z-index:200;display:none;box-shadow:0 20px 60px rgba(0,0,0,.65)}
 .panel.active{display:block}
 .panel-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
@@ -64,11 +62,11 @@ textarea{height:100px;resize:none}
 
   <div class="nav-row">
     <div class="nav">
-       <button onclick="render('days')">Days</button>
-       <button onclick="render('weeks')">Weeks</button>
-       <button onclick="render('months')">Months</button>
-       <button onclick="render('years')">Years</button>
-       <button onclick="goBack()">Back</button>
+      <button onclick="render('days')">Days</button>
+      <button onclick="render('weeks')">Weeks</button>
+      <button onclick="render('months')">Months</button>
+      <button onclick="render('years')">Years</button>
+      <button onclick="goBack()">Back</button>
     </div>
     <div class="view-title" id="currentView"></div>
   </div>
@@ -79,15 +77,12 @@ textarea{height:100px;resize:none}
 <div class="panel" id="dayPanel">
   <div class="panel-title" id="panelTitle"></div>
   <div class="panel-meta" id="panelMeta"></div>
-
   <div class="field-label">Photo</div>
   <input id="photoPicker" type="file" accept="image/*" style="display:none">
   <button onclick="choosePhoto()">Choose Photo</button>
   <div class="photo-name" id="photoName">NO PHOTO SELECTED</div>
-
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
-
   <div class="panel-actions">
     <button onclick="uploadPhoto()">Upload Photo</button>
     <button onclick="clearImageUrl()">Clear Image</button>
@@ -96,7 +91,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.6.5";
+const APP_VERSION="0.6.6";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -116,8 +111,10 @@ function dayNum(d){return Math.floor((sod(d)-sod(BIRTH))/MS_DAY)+1}
 function ageYears(d=new Date()){return (d-BIRTH)/(MS_DAY*365.2425)}
 function yearNum(y){return y-BIRTH.getFullYear()}
 function monthNum(y,m){return (y-BIRTH.getFullYear())*12+m+1}
-function weekNumFromStart(d){return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))+1}
-function totalWeeks(){return weekNumFromStart(addDays(END,-1))}
+function lifeWeekNum(d){return Math.floor((sod(d)-sod(BIRTH))/(MS_DAY*7))+1}
+function calendarWeekStart(d){const x=sod(d);x.setDate(x.getDate()-x.getDay());return x}
+function calendarWeekIndex(d){return Math.floor((calendarWeekStart(d)-calendarWeekStart(BIRTH))/(MS_DAY*7))+1}
+function totalWeeks(){return calendarWeekIndex(addDays(END,-1))}
 function clampDate(d){if(d<BIRTH)return new Date(BIRTH);if(d>=END)return new Date(END);return d}
 function formatMonthDay(d){return `${MONTHS[d.getMonth()]} ${d.getDate()}`}
 function formatWeekRange(start){
@@ -128,8 +125,8 @@ function formatWeekRange(start){
 }
 function dayOfYear(d){const start=new Date(d.getFullYear(),0,1);return Math.floor((sod(d)-sod(start))/MS_DAY)+1}
 function daysInYear(y){return new Date(y,1,29).getMonth()===1?366:365}
-function weekOfYearApprox(d){return Math.floor((dayOfYear(d)-1)/7)+1}
-function weeksInCurrentYear(){return Math.ceil(daysInYear(new Date().getFullYear())/7)}
+function calendarWeekOfYear(d){return Math.floor((calendarWeekStart(d)-calendarWeekStart(new Date(d.getFullYear(),0,1)))/(MS_DAY*7))+1}
+function weeksInCurrentYear(){return calendarWeekOfYear(new Date(new Date().getFullYear(),11,31))}
 function daysLeftInYear(){const now=sod(new Date());const last=new Date(now.getFullYear(),11,31);return Math.floor((sod(last)-now)/MS_DAY)}
 function dayKey(d){return `ns_day_${dayNum(d)}`}
 function getImageUrl(d){return localStorage.getItem(dayKey(d)+"_image")||""}
@@ -149,11 +146,7 @@ function getWeekImage(start){return findFirstImageInRange(start,addDays(start,6)
 function getMonthImage(y,m){return findFirstImageInRange(new Date(y,m,1),new Date(y,m+1,0))}
 function getYearImage(y){return findFirstImageInRange(new Date(y,0,1),new Date(y,11,31))}
 
-function imageFileNameFromUrl(url){
-  if(!url)return "";
-  return url.split("/img/")[1]||"";
-}
-
+function imageFileNameFromUrl(url){if(!url)return "";return url.split("/img/")[1]||""}
 function uniqueImageFileName(d,file){
   let ext="jpg";
   if(file.type&&file.type.includes("png"))ext="png";
@@ -163,33 +156,25 @@ function uniqueImageFileName(d,file){
 
 async function getUploadKey(forcePrompt=false){
   let uploadKey=localStorage.getItem(UPLOAD_KEY_STORAGE);
-
   if(forcePrompt||!uploadKey){
     const entered=prompt("UPLOAD KEY");
     if(!entered)return "";
     localStorage.setItem(UPLOAD_KEY_STORAGE,entered);
     uploadKey=entered;
   }
-
   return uploadKey;
 }
 
 async function attemptPhotoUpload(fileName,file,forcePrompt=false){
   const uploadKey=await getUploadKey(forcePrompt);
   if(!uploadKey)return {ok:false,status:0};
-
   const response=await fetch(WORKER_URL+"/upload/"+fileName,{
     method:"POST",
-    headers:{
-      "x-upload-key":uploadKey,
-      "content-type":file.type||"image/jpeg"
-    },
+    headers:{"x-upload-key":uploadKey,"content-type":file.type||"image/jpeg"},
     body:file
   });
-
   if(response.status===401)return {ok:false,status:401};
   if(!response.ok)return {ok:false,status:response.status};
-
   const data=await response.json();
   return {ok:true,status:response.status,url:data.url};
 }
@@ -197,29 +182,23 @@ async function attemptPhotoUpload(fileName,file,forcePrompt=false){
 async function attemptDeleteFile(fileName,forcePrompt=false){
   const uploadKey=await getUploadKey(forcePrompt);
   if(!uploadKey)return {ok:false,status:0};
-
   const response=await fetch(WORKER_URL+"/delete/"+fileName,{
     method:"DELETE",
     headers:{"x-upload-key":uploadKey}
   });
-
   if(response.status===401)return {ok:false,status:401};
   if(!response.ok)return {ok:false,status:response.status};
-
   return {ok:true,status:response.status};
 }
 
 async function deleteR2ImageByUrl(url){
   const fileName=imageFileNameFromUrl(url);
   if(!fileName)return true;
-
   let result=await attemptDeleteFile(fileName,false);
-
   if(result.status===401){
     localStorage.removeItem(UPLOAD_KEY_STORAGE);
     result=await attemptDeleteFile(fileName,true);
   }
-
   return result.ok;
 }
 
@@ -233,20 +212,25 @@ function meta(){
 function updateMeter(mode){
   const now=new Date();
   let total=111,current=yearNum(now.getFullYear())+1,label=`CURRENT YEAR: ${yearNum(now.getFullYear())}`,sub="";
-  if(mode==="months"||mode==="yearMonths"||mode==="monthWeeks"){total=12;current=now.getMonth()+1;label=`CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;sub=`MONTH ${current} OF 12`}
-  if(mode==="weeks"||mode==="weekDays"){total=weeksInCurrentYear();current=weekOfYearApprox(now);label=`CURRENT WEEK: ${weekNumFromStart(now)}`;sub=`WEEK ${current} OF ${total}`}
-  if(mode==="days"){total=daysInYear(now.getFullYear());current=dayOfYear(now);label=`CURRENT DAY: ${dayNum(now)}`;sub=`DAYS LEFT: ${daysLeftInYear()}`}
+
+  if(mode==="months"||mode==="yearMonths"||mode==="monthWeeks"){
+    total=12;current=now.getMonth()+1;label=`CURRENT MONTH: ${monthNum(now.getFullYear(),now.getMonth())}`;sub=`MONTH ${current} OF 12`;
+  }
+  if(mode==="weeks"||mode==="weekDays"){
+    total=weeksInCurrentYear();current=calendarWeekOfYear(now);label=`CURRENT WEEK: ${calendarWeekIndex(now)}`;sub=`WEEK ${current} OF ${total}`;
+  }
+  if(mode==="days"){
+    total=daysInYear(now.getFullYear());current=dayOfYear(now);label=`CURRENT DAY: ${dayNum(now)}`;sub=`DAYS LEFT: ${daysLeftInYear()}`;
+  }
   if(mode==="years"){sub=`YEAR ${yearNum(now.getFullYear())} OF 110`}
 
   meterLabel.innerText=label;
   meterSub.innerText=sub;
   meterGrid.innerHTML="";
-
   let cols=total;
   if(total>60)cols=37;
   if(total<=12)cols=total;
   if(total>12&&total<=60)cols=26;
-
   meterGrid.style.gridTemplateColumns=`repeat(${cols}, 6px)`;
 
   for(let i=1;i<=total;i++){
@@ -295,7 +279,6 @@ function scrollToCurrent(){
 function render(mode,data=null,push=true){
   if(push)historyStack.push({...currentRender});
   currentRender={mode,data};
-
   if(mode==="years")renderYears();
   if(mode==="months")renderMonths();
   if(mode==="weeks")renderWeeks();
@@ -308,45 +291,38 @@ function render(mode,data=null,push=true){
 function renderYears(){
   setState("Lifetime Grid","1987 — 2097",5);
   const nowY=new Date().getFullYear();
-
   for(let y=1987;y<=2097;y++){
     const img=getYearImage(y);
     const cls=(y===nowY?"current":y<nowY?"past":"future")+(img?" has-image":"");
     tile([`${y}`,`Y /// ${yearNum(y)}`],cls,()=>render("yearMonths",{year:y}),y===nowY?"currentTile":null,img);
   }
-
   scrollToCurrent();
 }
 
 function renderYearMonths(y){
   setState("Year Grid",`${y} / Y /// ${yearNum(y)}`,4);
   const now=new Date();
-
   for(let m=0;m<12;m++){
     const d=new Date(y,m,1);
     const img=getMonthImage(y,m);
     const isCurrent=y===now.getFullYear()&&m===now.getMonth();
     tile([`${MONTHS[m]}`,`M /// ${monthNum(y,m)}`],clsForDate(d,img),()=>render("monthWeeks",{year:y,month:m}),isCurrent?"currentTile":null,img);
   }
-
   scrollToCurrent();
 }
 
 function renderMonths(){
   setState("Continuous Month Grid","M /// 1 — M /// 1320",4);
   const now=new Date();
-
   for(let y=1987;y<=2097;y++){
     for(let m=0;m<12;m++){
       const d=new Date(y,m,1);
       if(d>=END)break;
-
       const img=getMonthImage(y,m);
       const isCurrent=y===now.getFullYear()&&m===now.getMonth();
       tile([`${MONTHS[m]}`,`M /// ${monthNum(y,m)}`],clsForDate(d,img),()=>render("monthWeeks",{year:y,month:m}),isCurrent?"currentTile":null,img);
     }
   }
-
   scrollToCurrent();
 }
 
@@ -355,45 +331,42 @@ function renderMonthWeeks(y,m){
   const now=sod(new Date());
   const first=new Date(y,m,1);
   const last=new Date(y,m+1,0);
-  let start=new Date(first);
+  let start=calendarWeekStart(first);
 
   while(start<=last){
     const weekStart=new Date(start);
     const img=getWeekImage(weekStart);
     const isCurrent=now>=weekStart&&now<=addDays(weekStart,6);
-    tile([formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],clsForDate(weekStart,img),()=>render("weekDays",{start:weekStart}),isCurrent?"currentTile":null,img);
+    tile([formatWeekRange(weekStart),`W /// ${calendarWeekIndex(weekStart)}`],clsForDate(weekStart,img),()=>render("weekDays",{start:weekStart}),isCurrent?"currentTile":null,img);
     start=addDays(start,7);
   }
-
   scrollToCurrent();
 }
 
 function renderWeeks(){
   setState("Continuous Week Grid",`W /// 1 — W /// ${totalWeeks()}`,4);
   const now=sod(new Date());
-  let start=new Date(BIRTH);
+  let start=calendarWeekStart(BIRTH);
 
   while(start<END){
     const weekStart=new Date(start);
     const img=getWeekImage(weekStart);
     const isCurrent=now>=weekStart&&now<=addDays(weekStart,6);
-    tile([formatWeekRange(weekStart),`W /// ${weekNumFromStart(weekStart)}`],clsForDate(weekStart,img),()=>render("weekDays",{start:weekStart}),isCurrent?"currentTile":null,img);
+    tile([formatWeekRange(weekStart),`W /// ${calendarWeekIndex(weekStart)}`],clsForDate(weekStart,img),()=>render("weekDays",{start:weekStart}),isCurrent?"currentTile":null,img);
     start=addDays(start,7);
   }
-
   scrollToCurrent();
 }
 
 function renderWeekDays(start){
-  const weekStart=sod(start);
+  const weekStart=calendarWeekStart(start);
   setState("Week Grid",formatWeekRange(weekStart),7);
 
   for(let i=0;i<7;i++){
     const d=addDays(weekStart,i);
     const img=getImageUrl(d);
-    tile([formatMonthDay(d),`D /// ${dayNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img);
+    tile([formatMonthDay(d),`D /// ${dayNum(d)}`,`LW /// ${lifeWeekNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img);
   }
-
   scrollToCurrent();
 }
 
@@ -407,10 +380,9 @@ function renderDays(){
   while(d<end&&d<END){
     const cur=new Date(d);
     const img=getImageUrl(cur);
-    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img);
+    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`,`LW /// ${lifeWeekNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img);
     d=addDays(d,1);
   }
-
   scrollToCurrent();
 }
 
@@ -420,7 +392,7 @@ function openDay(d){
   photoPicker.value="";
   photoName.innerText="NO PHOTO SELECTED";
   panelTitle.innerText=`${formatMonthDay(selectedDay)} / D /// ${dayNum(selectedDay)}`;
-  panelMeta.innerHTML=`W /// ${weekNumFromStart(selectedDay)}<br>M /// ${monthNum(selectedDay.getFullYear(),selectedDay.getMonth())}<br>Y /// ${yearNum(selectedDay.getFullYear())}`;
+  panelMeta.innerHTML=`W /// ${calendarWeekIndex(selectedDay)}<br>LW /// ${lifeWeekNum(selectedDay)}<br>M /// ${monthNum(selectedDay.getFullYear(),selectedDay.getMonth())}<br>Y /// ${yearNum(selectedDay.getFullYear())}`;
   dayNote.value=localStorage.getItem(dayKey(selectedDay)+"_note")||"";
   dayPanel.classList.add("active");
 }
@@ -429,9 +401,7 @@ dayNote.addEventListener("input",()=>{
   if(selectedDay)localStorage.setItem(dayKey(selectedDay)+"_note",dayNote.value);
 });
 
-function choosePhoto(){
-  photoPicker.click();
-}
+function choosePhoto(){photoPicker.click()}
 
 photoPicker.addEventListener("change",()=>{
   selectedFile=photoPicker.files[0];
@@ -444,7 +414,6 @@ async function uploadPhoto(){
 
   const oldUrl=getImageUrl(selectedDay);
   const fileName=uniqueImageFileName(selectedDay,selectedFile);
-
   let result=await attemptPhotoUpload(fileName,selectedFile,false);
 
   if(result.status===401){
@@ -452,10 +421,7 @@ async function uploadPhoto(){
     result=await attemptPhotoUpload(fileName,selectedFile,true);
   }
 
-  if(!result.ok){
-    alert("UPLOAD FAILED");
-    return;
-  }
+  if(!result.ok){alert("UPLOAD FAILED");return}
 
   localStorage.setItem(dayKey(selectedDay)+"_image",result.url);
 
@@ -482,13 +448,11 @@ async function clearImageUrl(){
   render(currentRender.mode,currentRender.data,false);
 }
 
-function closePanel(){
-  dayPanel.classList.remove("active");
-}
+function closePanel(){dayPanel.classList.remove("active")}
 
 function goBack(){
   const last=historyStack.pop();
-  if(!last){render("years",null,false);return}
+  if(!last){render("days",null,false);return}
   render(last.mode,last.data,false);
 }
 

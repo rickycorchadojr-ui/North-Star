@@ -61,10 +61,10 @@ textarea{height:100px;resize:none}
 
   <div class="nav-row">
     <div class="nav">
-      <button onclick="render('days')">Days</button>
-      <button onclick="render('weeks')">Weeks</button>
-      <button onclick="render('months')">Months</button>
-      <button onclick="render('years')">Years</button>
+      <button onclick="showRoot('days')">Days</button>
+      <button onclick="showRoot('weeks')">Weeks</button>
+      <button onclick="showRoot('months')">Months</button>
+      <button onclick="showRoot('years')">Years</button>
       <button onclick="goBack()">Back</button>
     </div>
     <div class="view-title" id="currentView"></div>
@@ -267,9 +267,15 @@ function scrollToCurrent(){
   },60);
 }
 
+function showRoot(mode){
+  historyStack=[];
+  render(mode,null,false);
+}
+
 function render(mode,data=null,push=true){
   closePanel();
   if(push)historyStack.push({...currentRender});
+
   currentRender={mode,data};
   if(mode==="years")renderYears();
   if(mode==="months")renderMonths();

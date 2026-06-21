@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.7 -->
+<!-- NORTH STAR v0.8.8 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -111,8 +111,41 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .tile::before{width:10px;height:2px;right:-6px;bottom:-2px}
 .tile::after{width:2px;height:10px;right:-2px;bottom:-6px}
 .tile-text{position:relative;z-index:70;font-size:10px;font-weight:900;line-height:1.08;letter-spacing:.45px;text-transform:uppercase}
-.panel{position:fixed;right:22px;bottom:22px;width:380px;background:#090a0c;border:2px solid rgba(255,255,255,.55);padding:14px;z-index:200;display:none;box-shadow:0 20px 60px rgba(0,0,0,.65)}
+.panel{
+  position:fixed;
+  right:22px;
+  bottom:22px;
+  width:380px;
+  max-height:calc(100vh - 44px);
+  overflow-y:auto;
+  background:#090a0c;
+  border:2px solid rgba(255,255,255,.55);
+  padding:14px;
+  z-index:200;
+  display:none;
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
 .panel.active{display:block}
+.panel-section{display:none}
+.panel-section.active{display:block}
+
+.panel-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:6px;
+  margin-bottom:10px;
+}
+
+.panel-tab{
+  padding:6px 4px;
+  font-size:9px;
+  letter-spacing:.8px;
+}
+
+.panel-tab.active{
+  background:#eee;
+  color:#050505;
+}
 .panel-title{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
 .panel-meta{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;line-height:1.45;margin-bottom:10px}
 textarea,input,select{width:100%;background:#050505;color:#eee;border:1px solid rgba(255,255,255,.25);padding:10px;font-size:12px;font-weight:800;outline:none}
@@ -189,16 +222,32 @@ textarea{height:100px;resize:none}
 <div class="panel" id="dayPanel">
   <div class="panel-title" id="panelTitle"></div>
   <div class="panel-meta" id="panelMeta"></div>
+<div class="panel-tabs">
+  <button class="panel-tab active" id="tabState" onclick="showPanelSection('state')">State</button>
+  <button class="panel-tab" id="tabActivities" onclick="showPanelSection('activities')">Acts</button>
+  <button class="panel-tab" id="tabPhoto" onclick="showPanelSection('photo')">Photo</button>
+  <button class="panel-tab" id="tabNote" onclick="showPanelSection('note')">Note</button>
+</div>
 
+<div class="panel-section" id="sectionPhoto">
   <div class="field-label">Photo</div>
   <input id="photoPicker" type="file" accept="image/*" style="display:none">
   <button onclick="choosePhoto()">Choose Photo</button>
   <div class="photo-name" id="photoName">NO PHOTO SELECTED</div>
 
+<div class="panel-actions">
+  <button onclick="uploadPhoto()">Upload Photo</button>
+  <button onclick="clearImageUrl()">Clear Image</button>
+</div>
+</div>
+
+  <div class="panel-section" id="sectionNote">
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
+</div>
 
-    <div class="field-label">Sleep</div>
+    <div class="panel-section active" id="sectionState">
+  <div class="field-label">Sleep</div>
   <div class="sleep-row">
     <input id="sleepHours" type="number" min="0" max="24" placeholder="HRS">
     <input id="sleepMinutes" type="number" min="0" max="59" placeholder="MIN">
@@ -210,7 +259,9 @@ textarea{height:100px;resize:none}
     <input id="readinessScore" type="number" min="1" max="10" placeholder="READINESS">
     <input id="motivationScore" type="number" min="1" max="10" placeholder="MOTIVATION">
   </div>
+</div>
 
+  <div class="panel-section" id="sectionActivities">
   <div class="field-label">Activities</div>
 
 <div class="preset-row">
@@ -239,16 +290,15 @@ textarea{height:100px;resize:none}
 
   <div class="field-label">Totals</div>
   <div class="totals-grid" id="totalsGrid"></div>
+</div>
 
-  <div class="panel-actions">
-    <button onclick="uploadPhoto()">Upload Photo</button>
-    <button onclick="clearImageUrl()">Clear Image</button>
-    <button onclick="closePanel(true)">Close</button>
-  </div>
+<div class="panel-actions">
+  <button onclick="closePanel(true)">Close</button>
+</div>
 </div>
 
 <script>
-const APP_VERSION="0.8.7";
+const APP_VERSION="0.8.8";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -546,6 +596,18 @@ function renderDays(){
   scrollToCurrent();
 }
 
+function showPanelSection(section){
+  const sections=["state","activities","photo","note"];
+
+  sections.forEach(name=>{
+    const sectionEl=document.getElementById("section"+name.charAt(0).toUpperCase()+name.slice(1));
+    const tabEl=document.getElementById("tab"+name.charAt(0).toUpperCase()+name.slice(1));
+
+    if(sectionEl)sectionEl.classList.toggle("active",name===section);
+    if(tabEl)tabEl.classList.toggle("active",name===section);
+  });
+}
+
 function openDay(d){
   selectedDay=sod(d);
   selectedFile=null;
@@ -564,6 +626,7 @@ function openDay(d){
   motivationScore.value=localStorage.getItem(dayKey(selectedDay)+"_motivation_score")||"";
   renderActivityList();
   renderTotals();
+  showPanelSection("state");
   dayPanel.classList.add("active");
 }
 

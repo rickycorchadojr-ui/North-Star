@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.4 -->
+<!-- NORTH STAR v0.8.5 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -48,17 +48,17 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
   z-index:75;
   display:flex;
   align-items:flex-end;
-  gap:4px;
+  gap:3px;
 }
 
-.pillar-grid{
+.metric-grid{
   display:grid;
   grid-template-columns:repeat(2,18px);
   grid-template-rows:repeat(2,18px);
   gap:2px;
 }
 
-.pillar-square{
+.metric-square{
   width:18px;
   height:18px;
   display:flex;
@@ -71,20 +71,20 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
   text-shadow:0 1px 2px #000;
 }
 
-.pillar-sleep{background:#666}
-.pillar-health{background:#b89521}
-.pillar-life{background:#6eb6d9}
-.pillar-work{background:#1d4f9a}
+.metric-sleep{background:#666}
+.metric-health{background:#b89521}
+.metric-life{background:#6eb6d9}
+.metric-work{background:#1d4f9a}
 
-.sleep-decimal{
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.4px;
-  color:#eee;
-  text-shadow:0 1px 3px #000,0 0 8px #000;
-  min-width:22px;
-  text-align:right;
+.state-square{
+  background:#08090a;
+  border-color:rgba(255,255,255,.32);
 }
+
+.state-empty{
+  color:rgba(255,255,255,.35);
+}
+
 
 .tile::before,.tile::after{content:"";position:absolute;background:#eee;z-index:50;pointer-events:none;opacity:1}
 .tile::before{width:10px;height:2px;right:-6px;bottom:-2px}
@@ -195,7 +195,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.4";
+const APP_VERSION="0.8.5";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -586,24 +586,48 @@ function sleepDecimalForDate(d){
   return Number.isInteger(value)?String(value):value.toFixed(1);
 }
 
+function getSleepScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_sleep_score")||"";
+}
+
+function getReadinessScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_readiness_score")||"";
+}
+
+function getMotivationScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_motivation_score")||"";
+}
+
+function scoreValue(value){
+  return value?value:"-";
+}
+
 function tileMetricsHtml(d){
   if(!hasDayMetricData(d))return "";
 
   const totals=calculateTotalsForDate(d);
   const sleepDec=sleepDecimalForDate(d);
+  const readiness=getReadinessScoreForDate(d);
+  const motivation=getMotivationScoreForDate(d);
 
   return `
     <div class="tile-metrics">
-      <div class="pillar-grid">
-        <div class="pillar-square pillar-sleep">${percentOfDay(totals.sleep)}</div>
-        <div class="pillar-square pillar-health">${percentOfDay(totals.health)}</div>
-        <div class="pillar-square pillar-life">${percentOfDay(totals.life)}</div>
-        <div class="pillar-square pillar-work">${percentOfDay(totals.work)}</div>
+      <div class="metric-grid">
+        <div class="metric-square metric-sleep">${percentOfDay(totals.sleep)}</div>
+        <div class="metric-square metric-health">${percentOfDay(totals.health)}</div>
+        <div class="metric-square metric-life">${percentOfDay(totals.life)}</div>
+        <div class="metric-square metric-work">${percentOfDay(totals.work)}</div>
       </div>
-      <div class="sleep-decimal">${sleepDec}</div>
+      <div class="metric-grid">
+        <div class="metric-square state-square">${scoreValue(sleepDec)}</div>
+        <div class="metric-square state-square">${scoreValue(readiness)}</div>
+        <div class="metric-square state-square">${scoreValue(motivation)}</div>
+        <div class="metric-square state-square state-empty">-</div>
+      </div>
     </div>
   `;
 }
+
 
 function getActivities(){
   if(!selectedDay)return [];

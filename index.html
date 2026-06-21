@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.1 -->
+<!-- NORTH STAR v0.8.3 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -37,7 +37,55 @@ button:hover{background:#15181c;border-color:rgba(255,255,255,.38)}
 .tile:nth-child(even){background-color:#111418}
 .tile.has-image .tile-text{text-shadow:0 1px 3px #000,0 0 8px #000}
 .tile.current{outline:4px solid #eee;outline-offset:-4px;background-color:#20242b;z-index:4}
-.tile.future{opacity:.38}.tile.past{opacity:.82}
+.tile.future{opacity:.38}
+.tile.past{opacity:.82}
+.tile.current .tile-metrics{opacity:1}
+
+.tile-metrics{
+  position:absolute;
+  right:6px;
+  bottom:6px;
+  z-index:75;
+  display:flex;
+  align-items:flex-end;
+  gap:4px;
+}
+
+.pillar-grid{
+  display:grid;
+  grid-template-columns:repeat(2,18px);
+  grid-template-rows:repeat(2,18px);
+  gap:2px;
+}
+
+.pillar-square{
+  width:18px;
+  height:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:8px;
+  font-weight:900;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.35);
+  text-shadow:0 1px 2px #000;
+}
+
+.pillar-sleep{background:#666}
+.pillar-health{background:#b89521}
+.pillar-life{background:#6eb6d9}
+.pillar-work{background:#1d4f9a}
+
+.sleep-decimal{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:#eee;
+  text-shadow:0 1px 3px #000,0 0 8px #000;
+  min-width:22px;
+  text-align:right;
+}
+
 .tile::before,.tile::after{content:"";position:absolute;background:#eee;z-index:50;pointer-events:none;opacity:1}
 .tile::before{width:10px;height:2px;right:-6px;bottom:-2px}
 .tile::after{width:2px;height:10px;right:-2px;bottom:-6px}
@@ -57,6 +105,10 @@ textarea{height:100px;resize:none}
 .activity-name{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
 .activity-meta{font-size:9px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;white-space:nowrap}
 .activity-delete{padding:3px 7px;font-size:9px;border-radius:4px}
+.totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.total-box{background:#050505;border:1px solid rgba(255,255,255,.16);padding:7px 8px}
+.total-label{font-size:9px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.55}
+.total-value{font-size:12px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;margin-top:2px}
 .panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
@@ -125,19 +177,23 @@ textarea{height:100px;resize:none}
 
   <div class="activity-list" id="activityList"></div>
 
+  <div class="field-label">Totals</div>
+  <div class="totals-grid" id="totalsGrid"></div>
+
   <div class="panel-actions">
     <button onclick="uploadPhoto()">Upload Photo</button>
     <button onclick="clearImageUrl()">Clear Image</button>
-    <button onclick="closePanel()">Close</button>
+    <button onclick="closePanel(true)">Close</button>
   </div>
 </div>
 
 <script>
-const APP_VERSION="0.8.1";
+const APP_VERSION="0.8.3";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
 const MS_DAY=86400000;
+const DAY_MINUTES=1440;
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 const WORKER_URL="https://withered-glade-1589.rickycorchadojr.workers.dev";
 const UPLOAD_KEY_STORAGE="northStarUploadKey";
@@ -294,12 +350,15 @@ function clsForDate(d,img=""){
   return cls;
 }
 
-function tile(lines,cls,onClick,id,image=""){
+function tile(lines,cls,onClick,id,image="",metricDate=null){
   const t=document.createElement("div");
   t.className="tile "+(cls||"");
   if(id)t.id=id;
   if(image)t.style.backgroundImage=`url("${image}")`;
-  t.innerHTML=`<div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>`;
+  t.innerHTML=`
+    <div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>
+    ${metricDate?tileMetricsHtml(metricDate):""}
+  `;
   if(onClick)t.onclick=onClick;
   grid.appendChild(t);
 }
@@ -404,7 +463,7 @@ function renderWeekDays(start){
   for(let i=0;i<7;i++){
     const d=addDays(weekStart,i);
     const img=getImageUrl(d);
-    tile([formatMonthDay(d),`D /// ${dayNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img);
+    tile([formatMonthDay(d),`D /// ${dayNum(d)}`],clsForDate(d,img),()=>openDay(d),+sod(d)===+sod(new Date())?"currentTile":null,img,d);
   }
   scrollToCurrent();
 }
@@ -418,7 +477,7 @@ function renderDays(){
   while(d<end&&d<END){
     const cur=new Date(d);
     const img=getImageUrl(cur);
-    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img);
+    tile([formatMonthDay(cur),`D /// ${dayNum(cur)}`],clsForDate(cur,img),()=>openDay(cur),+sod(cur)===+today?"currentTile":null,img,cur);
     d=addDays(d,1);
   }
   scrollToCurrent();
@@ -439,6 +498,7 @@ function openDay(d){
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
   renderActivityList();
+  renderTotals();
   dayPanel.classList.add("active");
 }
 
@@ -451,11 +511,80 @@ function saveSleepMetric(){
   localStorage.setItem(dayKey(selectedDay)+"_sleep_hours",sleepHours.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_minutes",sleepMinutes.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
+  renderTotals();
 }
 
 sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
+function getActivitiesForDate(d){
+  try{
+    return JSON.parse(localStorage.getItem(activitiesKey(d))||"[]");
+  }catch(e){
+    return [];
+  }
+}
+
+function getSleepMinutesForDate(d){
+  const h=parseInt(localStorage.getItem(dayKey(d)+"_sleep_hours"),10)||0;
+  const m=parseInt(localStorage.getItem(dayKey(d)+"_sleep_minutes"),10)||0;
+  return (h*60)+m;
+}
+
+function calculateTotalsForDate(d){
+  const totals={
+    sleep:getSleepMinutesForDate(d),
+    health:0,
+    life:0,
+    work:0
+  };
+
+  getActivitiesForDate(d).forEach(activity=>{
+    const minutes=parseInt(activity.minutes,10)||0;
+    if(activity.category==="health")totals.health+=minutes;
+    if(activity.category==="life")totals.life+=minutes;
+    if(activity.category==="work")totals.work+=minutes;
+  });
+
+  totals.tracked=totals.sleep+totals.health+totals.life+totals.work;
+  return totals;
+}
+
+function hasDayMetricData(d){
+  const totals=calculateTotalsForDate(d);
+  return totals.tracked>0;
+}
+
+function percentOfDay(minutes){
+  if(!minutes)return "-";
+  return String(Math.round((minutes/DAY_MINUTES)*100));
+}
+
+function sleepDecimalForDate(d){
+  const mins=getSleepMinutesForDate(d);
+  if(!mins)return "";
+  const value=mins/60;
+  return Number.isInteger(value)?String(value):value.toFixed(1);
+}
+
+function tileMetricsHtml(d){
+  if(!hasDayMetricData(d))return "";
+
+  const totals=calculateTotalsForDate(d);
+  const sleepDec=sleepDecimalForDate(d);
+
+  return `
+    <div class="tile-metrics">
+      <div class="pillar-grid">
+        <div class="pillar-square pillar-sleep">${percentOfDay(totals.sleep)}</div>
+        <div class="pillar-square pillar-health">${percentOfDay(totals.health)}</div>
+        <div class="pillar-square pillar-life">${percentOfDay(totals.life)}</div>
+        <div class="pillar-square pillar-work">${percentOfDay(totals.work)}</div>
+      </div>
+      <div class="sleep-decimal">${sleepDec}</div>
+    </div>
+  `;
+}
 
 function getActivities(){
   if(!selectedDay)return [];
@@ -528,6 +657,7 @@ function addActivity(){
   activityCategory.value="work";
 
   renderActivityList();
+  renderTotals();
 }
 
 function deleteActivity(id){
@@ -535,6 +665,65 @@ function deleteActivity(id){
   const activities=getActivities().filter(activity=>activity.id!==id);
   saveActivities(activities);
   renderActivityList();
+  renderTotals();
+}
+
+function getSleepMinutes(){
+  const h=parseInt(sleepHours.value,10)||0;
+  const m=parseInt(sleepMinutes.value,10)||0;
+  return (h*60)+m;
+}
+
+function calculateTotals(){
+  const totals={
+    sleep:getSleepMinutes(),
+    health:0,
+    life:0,
+    work:0
+  };
+
+  getActivities().forEach(activity=>{
+    const minutes=parseInt(activity.minutes,10)||0;
+    if(activity.category==="health")totals.health+=minutes;
+    if(activity.category==="life")totals.life+=minutes;
+    if(activity.category==="work")totals.work+=minutes;
+  });
+
+  totals.tracked=totals.sleep+totals.health+totals.life+totals.work;
+  totals.untracked=DAY_MINUTES-totals.tracked;
+  totals.trackedPercent=Math.round((totals.tracked/DAY_MINUTES)*100);
+
+  return totals;
+}
+
+function formatMinutes(total){
+  const sign=total<0?"-":"";
+  const n=Math.abs(total);
+  const h=Math.floor(n/60);
+  const m=n%60;
+  if(h&&m)return `${sign}${h}H ${m}M`;
+  if(h)return `${sign}${h}H`;
+  return `${sign}${m}M`;
+}
+
+function addTotalBox(label,value){
+  const box=document.createElement("div");
+  box.className="total-box";
+  box.innerHTML=`<div class="total-label">${label}</div><div class="total-value">${value}</div>`;
+  totalsGrid.appendChild(box);
+}
+
+function renderTotals(){
+  if(!selectedDay)return;
+  const totals=calculateTotals();
+  totalsGrid.innerHTML="";
+
+  addTotalBox("Sleep",formatMinutes(totals.sleep));
+  addTotalBox("Health",formatMinutes(totals.health));
+  addTotalBox("Life",formatMinutes(totals.life));
+  addTotalBox("Work",formatMinutes(totals.work));
+  addTotalBox("Tracked",`${totals.trackedPercent}%`);
+  addTotalBox(totals.untracked>=0?"Untracked":"Over",formatMinutes(totals.untracked));
 }
 
 function choosePhoto(){photoPicker.click()}
@@ -584,7 +773,10 @@ async function clearImageUrl(){
   render(currentRender.mode,currentRender.data,false);
 }
 
-function closePanel(){dayPanel.classList.remove("active")}
+function closePanel(refresh=false){
+  dayPanel.classList.remove("active");
+  if(refresh)render(currentRender.mode,currentRender.data,false);
+}
 
 function northStarStorageSnapshot(){
   const data={};

@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.8.3 -->
+<!-- NORTH STAR v0.8.4 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -99,6 +99,7 @@ textarea{height:100px;resize:none}
 .field-label{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55;margin-top:10px;margin-bottom:4px}
 .photo-name{margin-top:8px;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.65;word-break:break-all}
 .sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.state-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .activity-row{display:grid;grid-template-columns:1.4fr .7fr .9fr;gap:8px}
 .activity-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .activity-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:#050505;border:1px solid rgba(255,255,255,.16);padding:7px 8px}
@@ -153,11 +154,17 @@ textarea{height:100px;resize:none}
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
 
-  <div class="field-label">Sleep</div>
+    <div class="field-label">Sleep</div>
   <div class="sleep-row">
     <input id="sleepHours" type="number" min="0" max="24" placeholder="HRS">
     <input id="sleepMinutes" type="number" min="0" max="59" placeholder="MIN">
-    <input id="sleepScore" type="number" min="1" max="10" placeholder="1-10">
+    <input id="sleepScore" type="number" min="1" max="10" placeholder="SLEEP 1-10">
+  </div>
+
+  <div class="field-label">State</div>
+  <div class="state-row">
+    <input id="readinessScore" type="number" min="1" max="10" placeholder="READINESS">
+    <input id="motivationScore" type="number" min="1" max="10" placeholder="MOTIVATION">
   </div>
 
   <div class="field-label">Activities</div>
@@ -188,7 +195,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.8.3";
+const APP_VERSION="0.8.4";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -497,6 +504,8 @@ function openDay(d){
   sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
+  readinessScore.value=localStorage.getItem(dayKey(selectedDay)+"_readiness_score")||"";
+  motivationScore.value=localStorage.getItem(dayKey(selectedDay)+"_motivation_score")||"";
   renderActivityList();
   renderTotals();
   dayPanel.classList.add("active");
@@ -517,6 +526,16 @@ function saveSleepMetric(){
 sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
+
+function saveStateMetrics(){
+  if(!selectedDay)return;
+  localStorage.setItem(dayKey(selectedDay)+"_readiness_score",readinessScore.value);
+  localStorage.setItem(dayKey(selectedDay)+"_motivation_score",motivationScore.value);
+}
+
+readinessScore.addEventListener("input",saveStateMetrics);
+motivationScore.addEventListener("input",saveStateMetrics);
+
 function getActivitiesForDate(d){
   try{
     return JSON.parse(localStorage.getItem(activitiesKey(d))||"[]");

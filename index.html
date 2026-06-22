@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.9.1 -->
+<!-- NORTH STAR v0.9.0 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -255,17 +255,11 @@ textarea{height:100px;resize:none}
     <input id="sleepScore" type="number" min="1" max="10" placeholder="SLEEP 1-10">
   </div>
 
-  <div class="field-label">Pillars</div>
-
-<div class="state-row">
-  <input id="healthScore" type="number" min="1" max="10" placeholder="HEALTH">
-  <input id="lifeScore" type="number" min="1" max="10" placeholder="LIFE">
-</div>
-
-<div class="state-row" style="margin-top:8px">
-  <input id="workScore" type="number" min="1" max="10" placeholder="WORK">
-  <input id="dayScore" type="text" placeholder="DAY SCORE" readonly>
-</div>
+  <div class="field-label">State</div>
+  <div class="state-row">
+    <input id="readinessScore" type="number" min="1" max="10" placeholder="READINESS">
+    <input id="motivationScore" type="number" min="1" max="10" placeholder="MOTIVATION">
+  </div>
 
   <div class="field-label">Day Note</div>
   <textarea id="dayNote" placeholder="DAY NOTE"></textarea>
@@ -274,6 +268,7 @@ textarea{height:100px;resize:none}
 
   <div class="panel-section" id="sectionActivities">
   <div class="field-label">Activities</div>
+  <div class="activity-list" id="protocolList"></div>
 
 <div class="preset-row">
   <button class="preset-button" onclick="addPresetActivity('Bible',5,'health')">Bible 5</button>
@@ -309,7 +304,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.9.1";
+const APP_VERSION="0.9.0";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -318,6 +313,25 @@ const DAY_MINUTES=1440;
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 const WORKER_URL="https://withered-glade-1589.rickycorchadojr.workers.dev";
 const UPLOAD_KEY_STORAGE="northStarUploadKey";
+const PILLAR_PROTOCOLS={
+  health:[
+    {name:"Bible",minutes:5},
+    {name:"Meditation",minutes:5},
+    {name:"Walk",minutes:20},
+    {name:"Water",minutes:1}
+  ],
+  life:[
+    {name:"Mini Adventure",minutes:30},
+    {name:"Art",minutes:30},
+    {name:"Social",minutes:10}
+  ],
+  work:[
+    {name:"Premarket",minutes:20},
+    {name:"Trade",minutes:30},
+    {name:"Journal",minutes:15},
+    {name:"Review",minutes:15}
+  ]
+};
 
 let historyStack=[];
 let currentRender={mode:"days",data:null};
@@ -633,10 +647,8 @@ function openDay(d){
   sleepHours.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_hours")||"";
   sleepMinutes.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_minutes")||"";
   sleepScore.value=localStorage.getItem(dayKey(selectedDay)+"_sleep_score")||"";
-  healthScore.value=localStorage.getItem(dayKey(selectedDay)+"_health_score")||"";
-  lifeScore.value=localStorage.getItem(dayKey(selectedDay)+"_life_score")||"";
-  workScore.value=localStorage.getItem(dayKey(selectedDay)+"_work_score")||"";
-  updateDayScore();
+  readinessScore.value=localStorage.getItem(dayKey(selectedDay)+"_readiness_score")||"";
+  motivationScore.value=localStorage.getItem(dayKey(selectedDay)+"_motivation_score")||"";
   renderActivityList();
   renderTotals();
   showPanelSection("state");
@@ -652,7 +664,6 @@ function saveSleepMetric(){
   localStorage.setItem(dayKey(selectedDay)+"_sleep_hours",sleepHours.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_minutes",sleepMinutes.value);
   localStorage.setItem(dayKey(selectedDay)+"_sleep_score",sleepScore.value);
-  updateDayScore();
   renderTotals();
 }
 
@@ -660,36 +671,14 @@ sleepHours.addEventListener("input",saveSleepMetric);
 sleepMinutes.addEventListener("input",saveSleepMetric);
 sleepScore.addEventListener("input",saveSleepMetric);
 
-function pillarAverage(){
-  const scores=[
-    parseInt(sleepScore.value,10),
-    parseInt(healthScore.value,10),
-    parseInt(lifeScore.value,10),
-    parseInt(workScore.value,10)
-  ].filter(score=>score>=1&&score<=10);
-
-  if(scores.length<4)return "";
-  const total=scores.reduce((sum,score)=>sum+score,0);
-  return (total/scores.length).toFixed(1);
-}
-
-function updateDayScore(){
-  dayScore.value=pillarAverage();
-}
-
 function saveStateMetrics(){
   if(!selectedDay)return;
-
-  localStorage.setItem(dayKey(selectedDay)+"_health_score",healthScore.value);
-  localStorage.setItem(dayKey(selectedDay)+"_life_score",lifeScore.value);
-  localStorage.setItem(dayKey(selectedDay)+"_work_score",workScore.value);
-
-  updateDayScore();
+  localStorage.setItem(dayKey(selectedDay)+"_readiness_score",readinessScore.value);
+  localStorage.setItem(dayKey(selectedDay)+"_motivation_score",motivationScore.value);
 }
 
-healthScore.addEventListener("input",saveStateMetrics);
-lifeScore.addEventListener("input",saveStateMetrics);
-workScore.addEventListener("input",saveStateMetrics);
+readinessScore.addEventListener("input",saveStateMetrics);
+motivationScore.addEventListener("input",saveStateMetrics);
 
 function getActivitiesForDate(d){
   try{
@@ -745,52 +734,76 @@ function getSleepScoreForDate(d){
   return localStorage.getItem(dayKey(d)+"_sleep_score")||"";
 }
 
-function getHealthScoreForDate(d){
-  return localStorage.getItem(dayKey(d)+"_health_score")||"";
+function getReadinessScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_readiness_score")||"";
 }
 
-function getLifeScoreForDate(d){
-  return localStorage.getItem(dayKey(d)+"_life_score")||"";
-}
-
-function getWorkScoreForDate(d){
-  return localStorage.getItem(dayKey(d)+"_work_score")||"";
-}
-
-function dayScoreForDate(d){
-  const scores=[
-    parseInt(getSleepScoreForDate(d),10),
-    parseInt(getHealthScoreForDate(d),10),
-    parseInt(getLifeScoreForDate(d),10),
-    parseInt(getWorkScoreForDate(d),10)
-  ].filter(score=>score>=1&&score<=10);
-
-  if(scores.length<4)return "";
-  const total=scores.reduce((sum,score)=>sum+score,0);
-  return (total/scores.length).toFixed(1);
+function getMotivationScoreForDate(d){
+  return localStorage.getItem(dayKey(d)+"_motivation_score")||"";
 }
 
 function scoreValue(value){
   return value?value:"-";
 }
 
+function protocolScoreForDate(d,category){
+  const protocol=PILLAR_PROTOCOLS[category]||[];
+  if(!protocol.length)return 0;
+
+  const activities=getActivitiesForDate(d);
+  let earned=0;
+
+  protocol.forEach(required=>{
+    const logged=activities
+      .filter(activity=>
+        activity.category===category &&
+        activity.name.toLowerCase()===required.name.toLowerCase()
+      )
+      .reduce((sum,activity)=>sum+(parseInt(activity.minutes,10)||0),0);
+
+    const completion=Math.min(logged/required.minutes,1);
+    earned+=completion;
+  });
+
+  return Math.round((earned/protocol.length)*100);
+}
+
+function dayScoreForDate(d){
+  const scores=[
+    parseFloat(getSleepScoreForDate(d)),
+    parseFloat(getReadinessScoreForDate(d)),
+    parseFloat(getMotivationScoreForDate(d)),
+    protocolScoreForDate(d,"health")/10,
+    protocolScoreForDate(d,"life")/10,
+    protocolScoreForDate(d,"work")/10
+  ].filter(score=>score>=0&&score<=10);
+
+  if(!scores.length)return "";
+  const total=scores.reduce((sum,score)=>sum+score,0);
+  return (total/scores.length).toFixed(1);
+}
+
+
 function tileMetricsHtml(d){
+  if(
+  !hasDayMetricData(d) &&
+  !getSleepScoreForDate(d) &&
+  !getReadinessScoreForDate(d) &&
+  !getMotivationScoreForDate(d)
+)return "";
+
   const totals=calculateTotalsForDate(d);
-  const dayScore=dayScoreForDate(d);
-  const sleepScore=getSleepScoreForDate(d);
-  const healthScore=getHealthScoreForDate(d);
-  const lifeScore=getLifeScoreForDate(d);
-  const workScore=getWorkScoreForDate(d);
+  const sleep=getSleepScoreForDate(d);
+  const readiness=getReadinessScoreForDate(d);
+  const motivation=getMotivationScoreForDate(d);
 
-  if(!totals.tracked&&!dayScore&&!sleepScore&&!healthScore&&!lifeScore&&!workScore)return "";
-
-  return `
+    return `
     <div class="tile-metrics">
       <div class="metric-grid">
-        <div class="metric-square state-square">${scoreValue(lifeScore)}</div>
-        <div class="metric-square state-square">${scoreValue(sleepScore)}</div>
-        <div class="metric-square state-square">${scoreValue(healthScore)}</div>
-        <div class="metric-square state-square">${scoreValue(workScore)}</div>
+        <div class="metric-square state-square">${scoreValue(dayScoreForDate(d))}</div>
+        <div class="metric-square state-square">${scoreValue(sleep)}</div>
+        <div class="metric-square state-square">${scoreValue(readiness)}</div>
+        <div class="metric-square state-square">${scoreValue(motivation)}</div>
       </div>
       <div class="metric-grid">
         <div class="metric-square metric-sleep">${percentOfDay(totals.sleep)}</div>
@@ -823,10 +836,41 @@ function formatActivityCategory(category){
   return "UNKNOWN";
 }
 
+function renderProtocolList(){
+  if(!selectedDay)return;
+  protocolList.innerHTML="";
+
+  ["health","life","work"].forEach(category=>{
+    const title=document.createElement("div");
+    title.className="activity-meta";
+    title.innerText=`${formatActivityCategory(category)} PROTOCOL / ${protocolScore(category)}%`;
+    protocolList.appendChild(title);
+
+    PILLAR_PROTOCOLS[category].forEach(required=>{
+      const logged=getActivities()
+        .filter(activity=>
+          activity.category===category &&
+          activity.name.toLowerCase()===required.name.toLowerCase()
+        )
+        .reduce((sum,activity)=>sum+(parseInt(activity.minutes,10)||0),0);
+
+      const item=document.createElement("div");
+      item.className="activity-item";
+      item.innerHTML=`
+        <div class="activity-name">${required.name}</div>
+        <div class="activity-meta">${logged}/${required.minutes}M</div>
+        <div class="activity-meta">${logged>=required.minutes?"DONE":"SHORT"}</div>
+      `;
+      protocolList.appendChild(item);
+    });
+  });
+}
+
 function renderActivityList(){
   if(!selectedDay)return;
   const activities=getActivities();
   activityList.innerHTML="";
+  renderProtocolList();
 
   if(!activities.length){
     const empty=document.createElement("div");
@@ -917,6 +961,30 @@ function getSleepMinutes(){
   return (h*60)+m;
 }
 
+function protocolScore(category){
+  if(!selectedDay)return 0;
+
+  const protocol=PILLAR_PROTOCOLS[category]||[];
+  if(!protocol.length)return 0;
+
+  const activities=getActivities();
+  let earned=0;
+
+  protocol.forEach(required=>{
+    const logged=activities
+      .filter(activity=>
+        activity.category===category &&
+        activity.name.toLowerCase()===required.name.toLowerCase()
+      )
+      .reduce((sum,activity)=>sum+(parseInt(activity.minutes,10)||0),0);
+
+    const completion=Math.min(logged/required.minutes,1);
+    earned+=completion;
+  });
+
+  return Math.round((earned/protocol.length)*100);
+}
+
 function calculateTotals(){
   const totals={
     sleep:getSleepMinutes(),
@@ -962,9 +1030,14 @@ function renderTotals(){
   totalsGrid.innerHTML="";
 
   addTotalBox("Sleep",formatMinutes(totals.sleep));
-  addTotalBox("Health",formatMinutes(totals.health));
-  addTotalBox("Life",formatMinutes(totals.life));
-  addTotalBox("Work",formatMinutes(totals.work));
+  addTotalBox("Health Time",formatMinutes(totals.health));
+  addTotalBox("Life Time",formatMinutes(totals.life));
+  addTotalBox("Work Time",formatMinutes(totals.work));
+
+  addTotalBox("Health Score",`${protocolScore("health")}%`);
+  addTotalBox("Life Score",`${protocolScore("life")}%`);
+  addTotalBox("Work Score",`${protocolScore("work")}%`);
+
   addTotalBox("Tracked",`${totals.trackedPercent}%`);
   addTotalBox(totals.untracked>=0?"Untracked":"Over",formatMinutes(totals.untracked));
 }

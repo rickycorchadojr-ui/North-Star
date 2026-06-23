@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.9.3 -->
+<!-- NORTH STAR v0.9.5 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -173,6 +173,31 @@ textarea{height:100px;resize:none}
 .total-label{font-size:9px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:.55}
 .total-value{font-size:12px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;margin-top:2px}
 .panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.habit-x{
+  position:absolute;
+  left:7px;
+  bottom:5px;
+  z-index:90;
+  color:#ff2b2b;
+  font-size:18px;
+  font-weight:900;
+  line-height:1;
+  text-shadow:0 1px 2px #000,0 0 6px #000;
+}
+
+.habit-form{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+
+.habit-box{
+  background:#050505;
+  border:1px solid rgba(255,255,255,.18);
+  padding:8px;
+  margin-bottom:8px;
+}
 </style>
 </head>
 
@@ -257,6 +282,52 @@ textarea{height:100px;resize:none}
   <div class="field-label">Activities</div>
   <div class="activity-list" id="protocolList"></div>
 
+<div class="habit-box">
+  <div class="field-label">Winning Habit of the Month</div>
+  <div id="monthlyHabitStatus" class="activity-meta">NO MONTHLY HABIT SET</div>
+
+  <div class="habit-form">
+    <input id="habitName" type="text" placeholder="HABIT NAME">
+
+    <select id="habitPillar">
+      <option value="health">HEALTH</option>
+      <option value="life">LIFE</option>
+      <option value="work">WORK</option>
+    </select>
+
+    <select id="habitCapacity">
+      <option value="Discipline">DISCIPLINE</option>
+      <option value="Preparation">PREPARATION</option>
+      <option value="Faith">FAITH</option>
+      <option value="Fitness">FITNESS</option>
+      <option value="Mindfulness">MINDFULNESS</option>
+      <option value="Happiness">HAPPINESS</option>
+      <option value="Review">REVIEW</option>
+      <option value="Insight">INSIGHT</option>
+      <option value="Dream Projects">DREAM PROJECTS</option>
+      <option value="Trading Skill">TRADING SKILL</option>
+      <option value="Projects">PROJECTS</option>
+    </select>
+
+    <input id="habitMinutes" type="number" min="1" max="1440" placeholder="WIN MIN">
+
+    <select id="habitFrequency">
+      <option value="daily">DAILY</option>
+      <option value="weekdays">WEEKDAYS</option>
+      <option value="weekends">WEEKENDS</option>
+      <option value="sun">SUNDAY</option>
+      <option value="mon">MONDAY</option>
+      <option value="tue">TUESDAY</option>
+      <option value="wed">WEDNESDAY</option>
+      <option value="thu">THURSDAY</option>
+      <option value="fri">FRIDAY</option>
+      <option value="sat">SATURDAY</option>
+    </select>
+
+    <button onclick="saveMonthlyHabit()">Set Habit</button>
+  </div>
+</div>
+
 
 <div class="activity-row">
     <input id="activityName" type="text" placeholder="NAME">
@@ -284,7 +355,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.9.3";
+const APP_VERSION="0.9.5";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -293,6 +364,16 @@ const DAY_MINUTES=1440;
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 const WORKER_URL="https://withered-glade-1589.rickycorchadojr.workers.dev";
 const UPLOAD_KEY_STORAGE="northStarUploadKey";
+const MONTHLY_HABIT_STORAGE="northStarMonthlyHabit";
+const FREQ_DAYS={
+  sun:0,
+  mon:1,
+  tue:2,
+  wed:3,
+  thu:4,
+  fri:5,
+  sat:6
+};
 const PILLAR_PROTOCOLS={
   sleep:[
     {name:"Wake Early",minutes:1,capacity:"Discipline"},
@@ -375,6 +456,135 @@ function daysLeftInYear(){const now=sod(new Date());const last=new Date(now.getF
 function dayKey(d){return `ns_day_${dayNum(d)}`}
 function getImageUrl(d){return localStorage.getItem(dayKey(d)+"_image")||""}
 function activitiesKey(d){return dayKey(d)+"_activities"}
+function monthKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+
+function getMonthlyHabit(){
+  try{
+    return JSON.parse(localStorage.getItem(MONTHLY_HABIT_STORAGE)||"null");
+  }catch(e){
+    return null;
+  }
+}
+
+function habitAppliesToDate(habit,d){
+  if(!habit)return false;
+  if(habit.monthKey!==monthKey(d))return false;
+
+  const day=d.getDay();
+
+  if(habit.frequency==="daily")return true;
+  if(habit.frequency==="weekdays")return day>=1&&day<=5;
+  if(habit.frequency==="weekends")return day===0||day===6;
+
+  return FREQ_DAYS[habit.frequency]===day;
+}
+
+function getHabitMinutesForDate(habit,d){
+  if(!habit)return 0;
+
+  return getActivitiesForDate(d)
+    .filter(activity=>
+      activity.category===habit.pillar &&
+      activity.name.toLowerCase()===habit.name.toLowerCase()
+    )
+    .reduce((sum,activity)=>sum+(parseInt(activity.minutes,10)||0),0);
+}
+
+function habitCompleteForDate(d){
+  const habit=getMonthlyHabit();
+  if(!habitAppliesToDate(habit,d))return true;
+
+  return getHabitMinutesForDate(habit,d)>=habit.minutes;
+}
+
+function monthlyHabitProgress(){
+  const habit=getMonthlyHabit();
+  if(!habit)return null;
+
+  const now=sod(new Date());
+  const first=new Date(now.getFullYear(),now.getMonth(),1);
+  const last=new Date(now.getFullYear(),now.getMonth()+1,0);
+
+  let required=0;
+  let complete=0;
+
+  let d=first;
+  while(d<=last){
+    if(habitAppliesToDate(habit,d)){
+      required++;
+      if(habitCompleteForDate(d))complete++;
+    }
+    d=addDays(d,1);
+  }
+
+  return {
+    required,
+    complete,
+    percent:required?Math.round((complete/required)*100):0
+  };
+}
+
+function renderMonthlyHabitStatus(){
+  const habit=getMonthlyHabit();
+
+  if(!habit){
+    monthlyHabitStatus.innerText="NO MONTHLY HABIT SET";
+    return;
+  }
+
+  habitName.value=habit.name||"";
+  habitPillar.value=habit.pillar||"health";
+  habitCapacity.value=habit.capacity||"Discipline";
+  habitMinutes.value=habit.minutes||"";
+  habitFrequency.value=habit.frequency||"daily";
+
+  const logged=selectedDay?getHabitMinutesForDate(habit,selectedDay):0;
+  const applies=selectedDay&&habitAppliesToDate(habit,selectedDay);
+  const progress=monthlyHabitProgress();
+
+  monthlyHabitStatus.innerText=
+    `${habit.name.toUpperCase()} / ${habit.pillar.toUpperCase()} / ${habit.capacity.toUpperCase()} / ${habit.minutes}M / ${habit.frequency.toUpperCase()}`
+    + `\nTODAY: ${applies ? `${logged}/${habit.minutes}M` : "NOT SCHEDULED"}`
+    + `\nMONTH: ${progress.complete}/${progress.required} DAYS / ${progress.percent}%`;
+}
+
+function saveMonthlyHabit(){
+  const name=habitName.value.trim();
+  const minutes=parseInt(habitMinutes.value,10);
+
+  if(!name){alert("ENTER HABIT NAME");return}
+  if(!minutes||minutes<1){alert("ENTER WIN MINUTES");return}
+
+  const habit={
+    name,
+    pillar:habitPillar.value,
+    capacity:habitCapacity.value,
+    minutes,
+    frequency:habitFrequency.value,
+    monthKey:monthKey(new Date()),
+    createdAt:new Date().toISOString()
+  };
+
+  localStorage.setItem(MONTHLY_HABIT_STORAGE,JSON.stringify(habit));
+
+  const protocol=PILLAR_PROTOCOLS[habit.pillar]||[];
+  const exists=protocol.some(item=>item.name.toLowerCase()===habit.name.toLowerCase());
+
+  if(!exists){
+    protocol.push({
+      name:habit.name,
+      minutes:habit.minutes,
+      capacity:habit.capacity
+    });
+  }
+
+  renderActivityList();
+  renderTotals();
+  renderMonthlyHabitStatus();
+  render(currentRender.mode,currentRender.data,false);
+}
 
 function findFirstImageInRange(start,end){
   let d=sod(start);
@@ -502,10 +712,15 @@ function tile(lines,cls,onClick,id,image="",metricDate=null){
   t.className="tile "+(cls||"");
   if(id)t.id=id;
   if(image)t.style.backgroundImage=`url("${image}")`;
-  t.innerHTML=`
-    <div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>
-    ${metricDate?tileMetricsHtml(metricDate):""}
-  `;
+const habitX=metricDate&&!habitCompleteForDate(metricDate)
+  ? `<div class="habit-x">X</div>`
+  : "";
+
+t.innerHTML=`
+  <div class="tile-text">${lines.filter(Boolean).join("<br>")}</div>
+  ${habitX}
+  ${metricDate?tileMetricsHtml(metricDate):""}
+`;
   if(onClick)t.onclick=onClick;
   grid.appendChild(t);
 }
@@ -662,6 +877,7 @@ function openDay(d){
   motivationScore.value=localStorage.getItem(dayKey(selectedDay)+"_motivation_score")||"";
   renderActivityList();
   renderTotals();
+  renderMonthlyHabitStatus();
   showPanelSection("state");
   dayPanel.classList.add("active");
 }
@@ -960,6 +1176,7 @@ function addPresetActivity(name,minutes,category){
   saveActivities(activities);
   renderActivityList();
   renderTotals();
+  renderMonthlyHabitStatus();
 }
 
 
@@ -998,6 +1215,7 @@ function addActivity(){
 
   renderActivityList();
   renderTotals();
+  renderMonthlyHabitStatus();
 }
 
 function deleteActivity(id){
@@ -1006,6 +1224,7 @@ function deleteActivity(id){
   saveActivities(activities);
   renderActivityList();
   renderTotals();
+  renderMonthlyHabitStatus();
 }
 
 function getSleepMinutes(){
@@ -1154,9 +1373,9 @@ function northStarStorageSnapshot(){
     if(key&&key.startsWith("ns_day_")){
       data[key]=localStorage.getItem(key);
     }
-    if(key===UPLOAD_KEY_STORAGE){
-      data[key]=localStorage.getItem(key);
-    }
+    if(key===UPLOAD_KEY_STORAGE||key===MONTHLY_HABIT_STORAGE){
+  data[key]=localStorage.getItem(key);
+}
   }
   return data;
 }
@@ -1211,17 +1430,17 @@ if(!confirm("REPLACE CURRENT NORTH STAR DATA WITH THIS SAVE?")){
 const keysToRemove=[];
 for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
-  if(key&&(key.startsWith("ns_day_")||key===UPLOAD_KEY_STORAGE)){
-    keysToRemove.push(key);
-  }
+  if(key&&(key.startsWith("ns_day_")||key===UPLOAD_KEY_STORAGE||key===MONTHLY_HABIT_STORAGE)){
+  keysToRemove.push(key);
+}
 }
 
 keysToRemove.forEach(key=>localStorage.removeItem(key));
 
 Object.keys(save.localStorage).forEach(key=>{
-  if(key.startsWith("ns_day_")||key===UPLOAD_KEY_STORAGE){
-    localStorage.setItem(key,save.localStorage[key]);
-  }
+  if(key.startsWith("ns_day_")||key===UPLOAD_KEY_STORAGE||key===MONTHLY_HABIT_STORAGE){
+  localStorage.setItem(key,save.localStorage[key]);
+}
 });
 
       alert("SAVE LOADED");

@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.9.5 -->
+<!-- NORTH STAR v0.9.6 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -355,7 +355,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.9.5";
+const APP_VERSION="0.9.6";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -499,6 +499,36 @@ function habitCompleteForDate(d){
   return getHabitMinutesForDate(habit,d)>=habit.minutes;
 }
 
+function protocolListForCategory(category,d=null){
+  const protocol=[...(PILLAR_PROTOCOLS[category]||[])];
+  const habit=getMonthlyHabit();
+
+  if(
+    habit &&
+    habit.pillar===category &&
+    d &&
+    habitAppliesToDate(habit,d)
+  ){
+    const index=protocol.findIndex(
+      item=>item.name.toLowerCase()===habit.name.toLowerCase()
+    );
+
+    const monthlyItem={
+      name:habit.name,
+      minutes:habit.minutes,
+      capacity:habit.capacity
+    };
+
+    if(index>=0){
+      protocol[index]=monthlyItem;
+    }else{
+      protocol.push(monthlyItem);
+    }
+  }
+
+  return protocol;
+}
+
 function monthlyHabitProgress(){
   const habit=getMonthlyHabit();
   if(!habit)return null;
@@ -569,16 +599,6 @@ function saveMonthlyHabit(){
 
   localStorage.setItem(MONTHLY_HABIT_STORAGE,JSON.stringify(habit));
 
-  const protocol=PILLAR_PROTOCOLS[habit.pillar]||[];
-  const exists=protocol.some(item=>item.name.toLowerCase()===habit.name.toLowerCase());
-
-  if(!exists){
-    protocol.push({
-      name:habit.name,
-      minutes:habit.minutes,
-      capacity:habit.capacity
-    });
-  }
 
   renderActivityList();
   renderTotals();
@@ -712,7 +732,8 @@ function tile(lines,cls,onClick,id,image="",metricDate=null){
   t.className="tile "+(cls||"");
   if(id)t.id=id;
   if(image)t.style.backgroundImage=`url("${image}")`;
-const habitX=metricDate&&!habitCompleteForDate(metricDate)
+const today=sod(new Date());
+const habitX=metricDate&&sod(metricDate)<=today&&!habitCompleteForDate(metricDate)
   ? `<div class="habit-x">X</div>`
   : "";
 
@@ -981,7 +1002,7 @@ function scoreValue(value){
 }
 
 function protocolScoreForDate(d,category){
-  const protocol=PILLAR_PROTOCOLS[category]||[];
+  const protocol=protocolListForCategory(category,d);
   if(!protocol.length)return 0;
 
   const activities=getActivitiesForDate(d);
@@ -1080,7 +1101,7 @@ function renderProtocolList(){
     title.innerText=`${formatActivityCategory(category)} PROTOCOL / ${protocolScore(category)}%`;
     protocolList.appendChild(title);
 
-    PILLAR_PROTOCOLS[category].forEach(required=>{
+    protocolListForCategory(category,selectedDay).forEach(required=>{
       const logged=getActivities()
         .filter(activity=>
           activity.category===category &&
@@ -1236,7 +1257,7 @@ function getSleepMinutes(){
 function protocolScore(category){
   if(!selectedDay)return 0;
 
-  const protocol=PILLAR_PROTOCOLS[category]||[];
+  const protocol=protocolListForCategory(category,selectedDay);
   if(!protocol.length)return 0;
 
   const activities=getActivities();

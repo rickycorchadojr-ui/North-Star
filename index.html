@@ -892,14 +892,30 @@ function renderProtocolList(){
         )
         .reduce((sum,activity)=>sum+(parseInt(activity.minutes,10)||0),0);
 
-      const item=document.createElement("div");
-      item.className="activity-item";
-      item.innerHTML=`
-        <div class="activity-name">${required.name}</div>
-        <div class="activity-meta">${logged}/${required.minutes}M</div>
-        <div class="activity-meta">${logged>=required.minutes?"DONE":"SHORT"}</div>
-      `;
-      protocolList.appendChild(item);
+      const complete=logged>=required.minutes;
+
+const item=document.createElement("div");
+item.className="activity-item";
+item.style.cursor="pointer";
+
+item.innerHTML=`
+  <div class="activity-name">
+    ${complete ? "✓ " : "○ "}
+    ${required.name}
+  </div>
+  <div class="activity-meta">${logged}/${required.minutes}M</div>
+  <div class="activity-meta">${complete?"DONE":"SHORT"}</div>
+`;
+
+item.onclick=()=>{
+  addPresetActivity(
+    required.name,
+    required.minutes,
+    category
+  );
+};
+
+protocolList.appendChild(item);
     });
   });
 }

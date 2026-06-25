@@ -1270,30 +1270,62 @@ function renderActivityList(){
   if(!selectedDay)return;
 
   const blocks=getBlocks().sort((a,b)=>timeToMinutes(a.start)-timeToMinutes(b.start));
+  const activities=getActivities();
+  const blockIds=blocks.map(block=>block.id);
+
+  const manualActivities=activities.filter(activity=>
+    !activity.blockId && !blockIds.includes(activity.id)
+  );
+
   activityList.innerHTML="";
   renderProtocolList();
 
-  if(!blocks.length){
+  if(!blocks.length && !manualActivities.length){
     const empty=document.createElement("div");
     empty.className="activity-meta";
-    empty.innerText="NO TIME BLOCKS LOGGED";
+    empty.innerText="NO TIME BLOCKS OR ACTIVITIES LOGGED";
     activityList.appendChild(empty);
     return;
   }
 
-  blocks.forEach(block=>{
-    const item=document.createElement("div");
-    item.className="block-item";
-    item.innerHTML=`
-      <div>
-        <div class="block-time">${formatBlockTime(block.start,block.end)}</div>
-        <div class="block-name">${block.name}</div>
-        <div class="block-meta">${formatActivityCategory(block.category)} / ${block.capacity || "UNCATEGORIZED"} / ${block.minutes}M</div>
-      </div>
-      <button class="activity-delete" onclick="deleteBlock('${block.id}')">X</button>
-    `;
-    activityList.appendChild(item);
-  });
+  if(blocks.length){
+    const blockTitle=document.createElement("div");
+    blockTitle.className="activity-meta";
+    blockTitle.innerText="TIME BLOCKS";
+    activityList.appendChild(blockTitle);
+
+    blocks.forEach(block=>{
+      const item=document.createElement("div");
+      item.className="block-item";
+      item.innerHTML=`
+        <div>
+          <div class="block-time">${formatBlockTime(block.start,block.end)}</div>
+          <div class="block-name">${block.name}</div>
+          <div class="block-meta">${formatActivityCategory(block.category)} / ${block.capacity || "UNCATEGORIZED"} / ${block.minutes}M</div>
+        </div>
+        <button class="activity-delete" onclick="deleteBlock('${block.id}')">X</button>
+      `;
+      activityList.appendChild(item);
+    });
+  }
+
+  if(manualActivities.length){
+    const manualTitle=document.createElement("div");
+    manualTitle.className="activity-meta";
+    manualTitle.innerText="MANUAL ACTIVITY MINUTES";
+    activityList.appendChild(manualTitle);
+
+    manualActivities.forEach(activity=>{
+      const item=document.createElement("div");
+      item.className="activity-item";
+      item.innerHTML=`
+        <div class="activity-name">${activity.name}</div>
+        <div class="activity-meta">${formatActivityCategory(activity.category)} / ${activity.minutes}M</div>
+        <button class="activity-delete" onclick="deleteActivity('${activity.id}')">X</button>
+      `;
+      activityList.appendChild(item);
+    });
+  }
 }
 
 function addPresetActivity(name,minutes,category){

@@ -1,4 +1,4 @@
-<!-- NORTH STAR v0.9.6 -->
+<!-- NORTH STAR v1.0.0 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -162,6 +162,53 @@ textarea{height:100px;resize:none}
 .sleep-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .state-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .activity-row{display:grid;grid-template-columns:1.4fr .7fr .9fr;gap:8px}
+.block-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.block-row-full{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:8px;
+}
+
+.block-item{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  align-items:center;
+  background:#050505;
+  border:1px solid rgba(255,255,255,.18);
+  padding:8px;
+}
+
+.block-time{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  opacity:.6;
+  margin-bottom:3px;
+}
+
+.block-name{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+}
+
+.block-meta{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  opacity:.65;
+  margin-top:3px;
+}
 
 .activity-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .activity-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:#050505;border:1px solid rgba(255,255,255,.16);padding:7px 8px}
@@ -329,21 +376,48 @@ textarea{height:100px;resize:none}
 </div>
 
 
-<div class="activity-row">
-    <input id="activityName" type="text" placeholder="NAME">
-    <input id="activityMinutes" type="number" min="1" max="1440" placeholder="MIN">
-    <select id="activityCategory">
-      <option value="work">WORK</option>
-      <option value="life">LIFE</option>
-      <option value="health">HEALTH</option>
-    </select>
-  </div>
+<div class="field-label">Time Block</div>
 
-  <div class="panel-actions">
-    <button onclick="addActivity()">Add Activity</button>
-  </div>
+<div class="block-row">
+  <input id="blockStart" type="time">
+  <input id="blockEnd" type="time">
+</div>
 
-  <div class="activity-list" id="activityList"></div>
+<div class="block-row-full">
+  <input id="blockName" type="text" placeholder="BLOCK NAME">
+
+  <select id="blockCategory">
+    <option value="work">WORK</option>
+    <option value="life">LIFE</option>
+    <option value="health">HEALTH</option>
+  </select>
+
+  <select id="blockCapacity">
+    <option value="Discipline">DISCIPLINE</option>
+    <option value="Preparation">PREPARATION</option>
+    <option value="Faith">FAITH</option>
+    <option value="Fitness">FITNESS</option>
+    <option value="Mindfulness">MINDFULNESS</option>
+    <option value="Happiness">HAPPINESS</option>
+    <option value="Review">REVIEW</option>
+    <option value="Insight">INSIGHT</option>
+    <option value="Dream Projects">DREAM PROJECTS</option>
+    <option value="Trading Skill">TRADING SKILL</option>
+    <option value="Projects">PROJECTS</option>
+    <option value="Service">SERVICE</option>
+    <option value="Hygiene">HYGIENE</option>
+    <option value="Hydration">HYDRATION</option>
+    <option value="Flexibility">FLEXIBILITY</option>
+    <option value="Future Opportunity">FUTURE OPPORTUNITY</option>
+    <option value="Manifesting">MANIFESTING</option>
+  </select>
+</div>
+
+<div class="panel-actions">
+  <button onclick="addBlock()">Add Block</button>
+</div>
+
+<div class="activity-list" id="activityList"></div>
 
   <div class="field-label">Totals</div>
   <div class="totals-grid" id="totalsGrid"></div>
@@ -355,7 +429,7 @@ textarea{height:100px;resize:none}
 </div>
 
 <script>
-const APP_VERSION="0.9.6";
+const APP_VERSION="1.0.0-alpha";
 const BIRTH=new Date(1987,5,26);
 const HORIZON_YEARS=110;
 const END=new Date(2097,5,26);
@@ -456,6 +530,30 @@ function daysLeftInYear(){const now=sod(new Date());const last=new Date(now.getF
 function dayKey(d){return `ns_day_${dayNum(d)}`}
 function getImageUrl(d){return localStorage.getItem(dayKey(d)+"_image")||""}
 function activitiesKey(d){return dayKey(d)+"_activities"}
+function blocksKey(d){return dayKey(d)+"_blocks"}
+function timeToMinutes(time){
+  if(!time)return null;
+  const parts=time.split(":");
+  if(parts.length!==2)return null;
+  const h=parseInt(parts[0],10);
+  const m=parseInt(parts[1],10);
+  if(Number.isNaN(h)||Number.isNaN(m))return null;
+  return (h*60)+m;
+}
+
+function blockDuration(start,end){
+  const s=timeToMinutes(start);
+  const e=timeToMinutes(end);
+  if(s===null||e===null)return 0;
+
+  if(e>s)return e-s;
+
+  return (DAY_MINUTES-s)+e;
+}
+
+function formatBlockTime(start,end){
+  return `${start}–${end}`;
+}
 function monthKey(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 }
@@ -1150,25 +1248,29 @@ protocolList.appendChild(item);
 
 function renderActivityList(){
   if(!selectedDay)return;
-  const activities=getActivities();
+
+  const blocks=getBlocks().sort((a,b)=>timeToMinutes(a.start)-timeToMinutes(b.start));
   activityList.innerHTML="";
   renderProtocolList();
 
-  if(!activities.length){
+  if(!blocks.length){
     const empty=document.createElement("div");
     empty.className="activity-meta";
-    empty.innerText="NO ACTIVITIES LOGGED";
+    empty.innerText="NO TIME BLOCKS LOGGED";
     activityList.appendChild(empty);
     return;
   }
 
-  activities.forEach(activity=>{
+  blocks.forEach(block=>{
     const item=document.createElement("div");
-    item.className="activity-item";
+    item.className="block-item";
     item.innerHTML=`
-      <div class="activity-name">${activity.name}</div>
-      <div class="activity-meta">${formatActivityCategory(activity.category)} / ${activity.minutes}M</div>
-      <button class="activity-delete" onclick="deleteActivity('${activity.id}')">X</button>
+      <div>
+        <div class="block-time">${formatBlockTime(block.start,block.end)}</div>
+        <div class="block-name">${block.name}</div>
+        <div class="block-meta">${formatActivityCategory(block.category)} / ${block.capacity || "UNCATEGORIZED"} / ${block.minutes}M</div>
+      </div>
+      <button class="activity-delete" onclick="deleteBlock('${block.id}')">X</button>
     `;
     activityList.appendChild(item);
   });
@@ -1200,6 +1302,92 @@ function addPresetActivity(name,minutes,category){
   renderMonthlyHabitStatus();
 }
 
+function addBlock(){
+  if(!selectedDay)return;
+
+  const start=blockStart.value;
+  const end=blockEnd.value;
+  const name=blockName.value.trim();
+  const category=blockCategory.value;
+  const capacity=blockCapacity.value;
+  const minutes=blockDuration(start,end);
+
+  if(!start){alert("ENTER START TIME");return}
+  if(!end){alert("ENTER END TIME");return}
+  if(!name){alert("ENTER BLOCK NAME");return}
+  if(!minutes||minutes<1){alert("INVALID TIME BLOCK");return}
+
+  const block={
+    id:String(Date.now())+"-"+Math.random().toString(16).slice(2),
+    name,
+    category,
+    capacity,
+    start,
+    end,
+    minutes
+  };
+
+  const blocks=getBlocks();
+  blocks.push(block);
+  saveBlocks(blocks);
+
+  addActivityFromBlock(block);
+
+  blockStart.value="";
+  blockEnd.value="";
+  blockName.value="";
+  blockCategory.value="work";
+  blockCapacity.value="Preparation";
+
+  renderActivityList();
+  renderTotals();
+  renderMonthlyHabitStatus();
+}
+
+function addActivityFromBlock(block){
+  const activities=getActivities();
+  const existing=activities.find(activity=>
+    activity.name.toLowerCase()===block.name.toLowerCase() &&
+    activity.category===block.category
+  );
+
+  if(existing){
+    existing.minutes=(parseInt(existing.minutes,10)||0)+block.minutes;
+  }else{
+    activities.push({
+      id:block.id,
+      blockId:block.id,
+      name:block.name,
+      minutes:block.minutes,
+      category:block.category,
+      capacity:block.capacity
+    });
+  }
+
+  saveActivities(activities);
+}
+
+function deleteBlock(id){
+  if(!selectedDay)return;
+
+  const blocks=getBlocks();
+  const block=blocks.find(item=>item.id===id);
+
+  saveBlocks(blocks.filter(item=>item.id!==id));
+
+  if(block){
+    const activities=getActivities();
+    const matching=activities.find(activity=>activity.blockId===id || activity.id===id);
+
+    if(matching){
+      saveActivities(activities.filter(activity=>activity.id!==matching.id));
+    }
+  }
+
+  renderActivityList();
+  renderTotals();
+  renderMonthlyHabitStatus();
+}
 
 function addActivity(){
   if(!selectedDay)return;

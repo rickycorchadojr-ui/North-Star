@@ -983,7 +983,11 @@ function openDay(d){
   selectedFile=null;
   photoPicker.value="";
   photoName.innerText="NO PHOTO SELECTED";
-  activityName.value="";
+  blockStart.value="";
+blockEnd.value="";
+blockName.value="";
+blockCategory.value="work";
+blockCapacity.value="Preparation";
   activityMinutes.value="";
   activityCategory.value="work";
   panelTitle.innerText=`${formatMonthDay(selectedDay)} / D /// ${dayNum(selectedDay)}`;
@@ -1166,6 +1170,24 @@ function tileMetricsHtml(d){
       </div>
     </div>
   `;
+}
+
+function getBlocksForDate(d){
+  try{
+    return JSON.parse(localStorage.getItem(blocksKey(d))||"[]");
+  }catch(e){
+    return [];
+  }
+}
+
+function getBlocks(){
+  if(!selectedDay)return [];
+  return getBlocksForDate(selectedDay);
+}
+
+function saveBlocks(blocks){
+  if(!selectedDay)return;
+  localStorage.setItem(blocksKey(selectedDay),JSON.stringify(blocks));
 }
 
 function getActivities(){
